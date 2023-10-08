@@ -81,7 +81,7 @@ WGPUBindGroupLayout create_bind_group_layout(WGPUDevice device) {
   auto& tex_sampler_layout = binds[1];
   tex_sampler_layout.binding = 1;
   tex_sampler_layout.visibility = WGPUShaderStage_Fragment;
-  tex_sampler_layout.sampler.type = WGPUSamplerBindingType_NonFiltering;
+  tex_sampler_layout.sampler.type = WGPUSamplerBindingType_Filtering;
 
   // create a bind group layout
   WGPUBindGroupLayoutDescriptor bg_layout_desc{};
@@ -140,8 +140,8 @@ void create_image(WGPUDevice device) {
   globals.image_view = texture_view;
 
   WGPUSamplerDescriptor sampler_desc{};
-  sampler_desc.minFilter = WGPUFilterMode_Nearest;
-  sampler_desc.magFilter = WGPUFilterMode_Nearest;
+  sampler_desc.minFilter = WGPUFilterMode_Linear;
+  sampler_desc.magFilter = WGPUFilterMode_Linear;
   globals.image_sampler = wgpuDeviceCreateSampler(device, &sampler_desc);
 
   //  @TODO
