@@ -2,9 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 project(slime_mold)
 
 #   1.  edit cmake profiles -> -DCMAKE_TOOLCHAIN_FILE=/path/to/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
-#   2.  copy `index.html` from imgui/examples/example_emscripten_wgpu/web to the repo root
-#   3.  run the build, then copy `slime_mold.data` to the repo root.
-#   4.  in the terminal, from the repo root, emrun --browser chrome index.html
+#   2.  in the terminal, from the repo root, emrun --browser chrome index.html
 #
 #   https://stackoverflow.com/questions/51868832/integrate-emscripten-in-clion
 #   https://github.com/emscripten-core/emscripten/issues/11154
