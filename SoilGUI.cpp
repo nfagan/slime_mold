@@ -6,7 +6,7 @@
 SoilGUIUpdateResult SoilGUI::render(const SoilComponent& component, float fps) {
   SoilGUIUpdateResult result;
 
-  ImGui::Begin("SoilGUI");
+  ImGui::Begin("SlimeMoldGUI");
 
   ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / fps, fps);
 

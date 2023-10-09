@@ -7,9 +7,9 @@ The ideas behind the particle simulation are detailed in the following reference
 * [2] https://uwe-repository.worktribe.com/output/980579
 * [3] https://www.youtube.com/watch?v=X-iSQQgOd1A&t=923s
 
-# demo
+# [demo!](https://nfagan.github.io/slime_mold/)
 
-TODO
+This is the fun part; deploying and sharing a simple demo like this is easy. The only catch is **you need a very recent version of Chrome (117)** for this to work! 
 
 # build
 
