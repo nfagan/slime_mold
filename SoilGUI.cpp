@@ -3,12 +3,20 @@
 #include "slime_mold.hpp"
 #include <imgui.h>
 
-SoilGUIUpdateResult SoilGUI::render(const SoilComponent& component, float fps) {
+SoilGUIUpdateResult SoilGUI::render(const SoilComponent& component, float fps, float sim_t) {
+  static uint32_t update_index{};
+  static float last_sim_t{};
+
+  if ((++update_index % 30) == 0) {
+    last_sim_t = sim_t;
+  }
+
   SoilGUIUpdateResult result;
 
   ImGui::Begin("SlimeMoldGUI");
 
-  ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / fps, fps);
+  ImGui::Text("%.3f ms/frame (%.1f FPS)", 1e3f / fps, fps);
+  ImGui::Text("%.3f ms/sim step", last_sim_t);
 
   bool enabled = component.params.enabled;
   if (ImGui::Checkbox("Enabled", &enabled)) {

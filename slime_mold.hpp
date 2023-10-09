@@ -107,8 +107,8 @@ void add_value(float* data,
                const Vec2f& p01,
                float radius01,
                const Vec3f& value);
-void update_slime_mold_particles(SlimeParticle* particles,
-                                 const SlimeMoldConfig& config,
-                                 SlimeMoldSimulationContext* context);
+float update_slime_mold_particles(SlimeParticle* particles,
+                                  const SlimeMoldConfig& config,
+                                  SlimeMoldSimulationContext* context);
 
 }

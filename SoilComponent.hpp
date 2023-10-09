@@ -18,7 +18,7 @@ public:
 
 public:
   void initialize();
-  void update();
+  float update();
   void on_gui_update(const SoilGUIUpdateResult& res);
   const Soil* get_soil() const {
     return &soil;

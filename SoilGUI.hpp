@@ -25,5 +25,5 @@ struct SoilGUIUpdateResult {
 
 class SoilGUI {
 public:
-  static SoilGUIUpdateResult render(const SoilComponent& component, float fps);
+  static SoilGUIUpdateResult render(const SoilComponent& component, float app_fps, float sim_t);
 };

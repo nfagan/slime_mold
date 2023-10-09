@@ -69,13 +69,15 @@ void Soil::initialize() {
   impl->initialized = true;
 }
 
-void Soil::update() {
+float Soil::update() {
+  float res{};
   if (impl->initialized) {
-    gen::update_slime_mold_particles(
+    res = gen::update_slime_mold_particles(
       impl->particles.get(),
       impl->config,
       &impl->sim_context);
   }
+  return res;
 }
 
 Vec3f Soil::sample_quality01(const Vec2f& world_position_xz, float radius_world) const {

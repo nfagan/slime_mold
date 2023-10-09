@@ -2,6 +2,7 @@
 #include "random.hpp"
 #include "util.hpp"
 #include <iostream>
+#include <chrono>
 
 namespace {
 
@@ -461,9 +462,11 @@ std::unique_ptr<SlimeParticle[]> gen::make_slime_mold_particles(const SlimeMoldC
   return result;
 }
 
-void gen::update_slime_mold_particles(SlimeParticle* particles,
-                                      const SlimeMoldConfig& config,
-                                      SlimeMoldSimulationContext* context) {
+float gen::update_slime_mold_particles(SlimeParticle* particles,
+                                       const SlimeMoldConfig& config,
+                                       SlimeMoldSimulationContext* context) {
+  auto t0 = std::chrono::high_resolution_clock::now();
+
   auto* data0 = context->texture_data0;
   auto* data1 = context->texture_data1;
   auto* tmp = context->texture_data2;
@@ -507,6 +510,9 @@ void gen::update_slime_mold_particles(SlimeParticle* particles,
     }
   }
 
+  auto dt_ms = std::chrono::duration<double>(
+    std::chrono::high_resolution_clock::now() - t0).count() * 1e3;
+
   for (int i = 0; i < Config::texture_dim * Config::texture_dim; i++) {
     for (int j = 0; j < 3; j++) {
       const int srci = i * 3 + j;
@@ -515,6 +521,8 @@ void gen::update_slime_mold_particles(SlimeParticle* particles,
         clamp(context->texture_data0[srci], 0.0f, 1.0f) * 255.0f);
     }
   }
+
+  return float(dt_ms);
 }
 
 void gen::set_particle_turn_speed_power(SlimeParticle* particles,

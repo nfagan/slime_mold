@@ -19,7 +19,7 @@ public:
   Soil& operator=(const Soil& other) = delete;
 
   void initialize();
-  void update();
+  float update();
   Vec3f sample_quality01(const Vec2f& world_position_xz, float radius_world) const;
   void add_quality01(const Vec2f& world_position_xz, float radius_world, const Vec3f& value);
   float to_length01(float v) const;

@@ -6,14 +6,16 @@ void SoilComponent::initialize() {
   //
 }
 
-void SoilComponent::update() {
+float SoilComponent::update() {
+  float res{};
   if (params.enabled) {
     if (!params.initialized) {
       soil.initialize();
       params.initialized = true;
     }
-    soil.update();
+    res = soil.update();
   }
+  return res;
 }
 
 void SoilComponent::on_gui_update(const SoilGUIUpdateResult& res) {
