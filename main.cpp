@@ -8,6 +8,7 @@
 // - Introduction, links and more at the top of imgui.cpp
 
 #include "SoilComponent.hpp"
+#include "SoilGUI.hpp"
 #include "wgpu_imshow.hpp"
 
 #include "imgui.h"
@@ -64,8 +65,9 @@ void do_my_render_pass(WGPURenderPassEncoder enc) {
   wgpu::draw_image(enc);
 }
 
-void do_my_gui_update() {
-  //
+void do_my_gui_update(float fps) {
+  auto res = SoilGUI::render(globals.soil, fps);
+  globals.soil.on_gui_update(res);
 }
 
 } //  anon
@@ -264,7 +266,7 @@ static void MainLoopStep(void* window)
    * My render
    */
 
-  do_my_gui_update();
+  do_my_gui_update(io.Framerate);
 
   /*
    * End my render
@@ -277,6 +279,7 @@ static void MainLoopStep(void* window)
   static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
   // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+#if 0
   if (show_demo_window)
     ImGui::ShowDemoWindow(&show_demo_window);
 
@@ -302,6 +305,7 @@ static void MainLoopStep(void* window)
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
     ImGui::End();
   }
+#endif
 
   // 3. Show another simple window.
   if (show_another_window)

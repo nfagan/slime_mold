@@ -1,9 +1,6 @@
 #include "SoilComponent.hpp"
 #include "slime_mold.hpp"
-
-#if 0 //  @TODO
 #include "SoilGUI.hpp"
-#endif
 
 void SoilComponent::initialize() {
   //
@@ -20,7 +17,6 @@ void SoilComponent::update() {
 }
 
 void SoilComponent::on_gui_update(const SoilGUIUpdateResult& res) {
-#if 0 //  @TODO
   if (res.enabled) {
     params.enabled = res.enabled.value();
   }
@@ -64,5 +60,4 @@ void SoilComponent::on_gui_update(const SoilGUIUpdateResult& res) {
   if (res.only_right_turns) {
     soil.set_particle_use_only_right_turns(res.only_right_turns.value());
   }
-#endif
 }

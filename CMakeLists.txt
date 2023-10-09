@@ -15,6 +15,7 @@ add_executable(slime_mold
         random.cpp
         Soil.cpp
         SoilComponent.cpp
+        SoilGUI.cpp
         wgpu_imshow.cpp
         #   imgui
         deps/imgui/imgui.cpp
