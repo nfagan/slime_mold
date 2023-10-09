@@ -1,6 +1,6 @@
 # slime mold
 
-This repository is a first-exploration of [WebGPU](https://developer.chrome.com/blog/webgpu-cross-platform/); it is a port of the slime mold simulation from [grove](https://github.com/nfagan/grove-public) and builds directly off of the emscripten IMGUI [example](https://github.com/ocornut/imgui/tree/master/examples/example_emscripten_wgpu).
+This repository is a first-exploration of [WebGPU](https://developer.chrome.com/blog/webgpu-cross-platform/) and [emscripten](https://emscripten.org/); it is a port of the slime mold simulation from [grove](https://github.com/nfagan/grove-public) and builds directly off of the emscripten IMGUI [example](https://github.com/ocornut/imgui/tree/master/examples/example_emscripten_wgpu).
 
 The ideas behind the particle simulation are detailed in the following references. 
 * [1] https://sagejenson.com/physarum
