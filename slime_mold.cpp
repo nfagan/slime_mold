@@ -3,6 +3,10 @@
 #include "util.hpp"
 #include <chrono>
 
+#if DYNAMIC_TEXTURE_SIZE
+int gen::SlimeMoldConfig::texture_dim = DEFAULT_TEXTURE_SIZE;
+#endif
+
 namespace {
 
 using namespace gen;
@@ -75,11 +79,19 @@ constexpr float pif() {
   return float(pi());
 }
 
+#if DYNAMIC_TEXTURE_SIZE
+int data_texture_size() {
+  int tex_dim = Config::texture_dim;
+  constexpr int num_channels = Config::num_texture_channels;
+  return tex_dim * tex_dim * num_channels;
+}
+#else
 constexpr int data_texture_size() {
   constexpr int tex_dim = Config::texture_dim;
   constexpr int num_channels = Config::num_texture_channels;
   return tex_dim * tex_dim * num_channels;
 }
+#endif
 
 Vec3f channel_weights(float center_scale, float rand_scale, float gain) {
   Vec3f center{};
@@ -174,7 +186,11 @@ Vec3f sample3(const float* data, int i, int j, int rows, int channels) {
 }
 
 void deposit(const SlimeParticle& part, float* data) {
+#if DYNAMIC_TEXTURE_SIZE
+  const auto td = Config::texture_dim;
+#else
   constexpr auto td = Config::texture_dim;
+#endif
   constexpr auto nc = Config::num_texture_channels;
   const auto [i, j] = to_ij(part.position, td, td);
   auto* out = data + data_offset(i, j, td, nc);
@@ -353,7 +369,11 @@ void diffuse(float* a, float* b, float* tmp, float decay, float diff_speed, int 
 }
 
 void set_perturb_data(const Config& config, const float* im, float* out) {
+#if DYNAMIC_TEXTURE_SIZE
+  const auto dim = Config::texture_dim;
+#else
   constexpr auto dim = Config::texture_dim;
+#endif
   constexpr auto nc = Config::num_texture_channels;
   static_assert(nc == 3);
 
@@ -394,7 +414,11 @@ void apply_signal(const float* signal, float* out) {
 }
 
 void set_signal_data(float* im, const gen::SlimeMoldParams& params) {
+#if DYNAMIC_TEXTURE_SIZE
+  const auto dim = Config::texture_dim;
+#else
   constexpr auto dim = Config::texture_dim;
+#endif
   constexpr auto nc = Config::num_texture_channels;
   static_assert(nc == 3);
 
@@ -415,14 +439,6 @@ void scale_speed(SlimeParticle* parts, int num_parts, float scale) {
     parts[i].speed *= scale;
   }
 }
-
-#if 0
-void randomize_channel_weights(SlimeParticle* parts, int num_parts) {
-  for (int i = 0; i < num_parts; i++) {
-    parts[i].channel_weights = default_channel_weights();
-  }
-}
-#endif
 
 void set_right_only(SlimeParticle* parts, int num_parts, bool v) {
   for (int i = 0; i < num_parts; i++) {
@@ -537,9 +553,9 @@ float gen::update_slime_mold_particles(SlimeParticle* particles,
   return float(dt_ms);
 }
 
-void gen::set_particle_turn_speed_power(SlimeParticle* particles,
-                                        SlimeMoldConfig& config,
-                                        int new_power) {
+void gen::set_particle_turn_speed_power(
+  SlimeParticle* particles, SlimeMoldConfig& config, int new_power) {
+  //
   float scale = power_to_scale(config.turn_speed_power, new_power);
   if (scale != 1.0f) {
     scale_turn_speed(particles, config.num_particles, scale);
@@ -547,9 +563,9 @@ void gen::set_particle_turn_speed_power(SlimeParticle* particles,
   }
 }
 
-void gen::set_particle_speed_power(SlimeParticle* particles,
-                                   SlimeMoldConfig& config,
-                                   int new_power) {
+void gen::set_particle_speed_power(
+  SlimeParticle* particles, SlimeMoldConfig& config, int new_power) {
+  //
   float scale = power_to_scale(config.scale_speed_power, new_power);
   if (scale != 1.0f) {
     scale_speed(particles, config.num_particles, scale);
@@ -574,12 +590,10 @@ void gen::add_value(float* data, const Vec2f& p01, float radius01, const Vec3f& 
   clamped_add(data, td, td, nc, p01, radius01, v);
 }
 
-void gen::add_value(float* data,
-                    int tex_dim,
-                    int tex_components,
-                    const Vec2f& p01,
-                    float radius01,
-                    const Vec3f& v3) {
+void gen::add_value(
+  float* data, int tex_dim, int tex_components,
+  const Vec2f& p01, float radius01, const Vec3f& v3) {
+  //
   const float v[3]{v3.x, v3.y, v3.z};
   clamped_add(data, tex_dim, tex_dim, tex_components, p01, radius01, v);
 }

@@ -63,7 +63,8 @@ void do_my_begin_frame() {
     globals.use_bw,
     globals.full_screen_image,
     wgpu_swap_chain_width,
-    wgpu_swap_chain_height
+    wgpu_swap_chain_height,
+    globals.soil.get_texture_dim()
   }, globals.soil.get_soil()->read_rgbau8_image_data());
 }
 

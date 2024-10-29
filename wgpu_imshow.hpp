@@ -9,6 +9,7 @@ struct Context {
   bool full_screen;
   int viewport_width;
   int viewport_height;
+  int texture_dim;
 };
 
 void begin_frame(const Context& context, const void* image_data);

@@ -21,78 +21,129 @@ SoilGUIUpdateResult SoilGUI::render(
     result.reinitialize = true;
   }
 
-  {
-    static int item{};
-    const char* const num_particles_str[3]{"1000", "2000", "4000"};
-    const int num_particles[3]{1000, 2000, 4000};
-    if (ImGui::ListBox("NumParticles", &item, num_particles_str, 3)) {
-      result.new_num_particles = num_particles[item];
-    }
-  }
-
-  ImGui::Text("Presets");
-  if (ImGui::SmallButton("MidCoherence")) {
-    result.turn_speed_power = 2;
-    result.speed_power = 2;
-    result.only_right_turns = false;
-  }
-  if (ImGui::SmallButton("HighCoherence")) {
-    result.turn_speed_power = 3;
-    result.speed_power = 2;
-    result.only_right_turns = false;
-  }
-  if (ImGui::SmallButton("Chaotic")) {
-    result.turn_speed_power = 0;
-    result.speed_power = 2;
-    result.only_right_turns = true;
-  }
-  if (ImGui::SmallButton("Fragile")) {
-    result.turn_speed_power = 2;
-    result.speed_power = 1;
-    result.only_right_turns = false;
-  }
-  if (ImGui::SmallButton("Clustered")) {
-    result.turn_speed_power = 4;
-    result.speed_power = 2;
-    result.only_right_turns = true;
-  }
-
-  ImGui::Text("%.3f ms/frame (%.1f FPS)", 1e3f / fps, fps);
-  ImGui::Text("%.3f ms/sim step", last_sim_t);
-
   bool enabled = component.params.enabled;
   if (ImGui::Checkbox("Enabled", &enabled)) {
     result.enabled = enabled;
   }
 
+  if (ImGui::TreeNode("NumParticles")) {
+    static int item{};
+    static constexpr int num_items = 7;
+    const char* const num_particles_str[num_items]{"1000", "2000", "4000", "8000", "16000", "25000", "32000"};
+    const int num_particles[num_items]{1000, 2000, 4000, 8000, 16000, 25000, 32000};
+    if (ImGui::ListBox("", &item, num_particles_str, num_items)) {
+      result.new_num_particles = num_particles[item];
+    }
+    ImGui::TreePop();
+  }
+
+#if DYNAMIC_TEXTURE_SIZE
+  if (ImGui::TreeNode("ImageSize")) {
+    static int item{};
+    static constexpr int num_items = 3;
+    const char* const items_str[num_items]{"256x256", "512x512", "1024x1024"};
+    const int items[num_items]{256, 512, 1024};
+    if (ImGui::ListBox("", &item, items_str, num_items)) {
+      result.new_texture_size = items[item];
+    }
+    ImGui::TreePop();
+  }
+#endif
+
+  if (ImGui::TreeNode("Presets")) {
+    const bool is_high_res = gen::SlimeMoldConfig::texture_dim > 512;
+    if (ImGui::SmallButton("MidCoherence")) {
+      result.turn_speed_power = 2;
+      result.speed_power = 2 - int(is_high_res);
+      result.only_right_turns = false;
+    }
+    if (ImGui::SmallButton("HighCoherence")) {
+      result.turn_speed_power = 3 + int(is_high_res);
+      result.speed_power = 2 - int(is_high_res);
+      result.only_right_turns = false;
+    }
+    if (ImGui::SmallButton("Chaotic")) {
+      result.turn_speed_power = 0;
+      result.speed_power = 2 - int(is_high_res);
+      result.only_right_turns = true;
+    }
+    if (ImGui::SmallButton("Fragile")) {
+      result.turn_speed_power = 2;
+      result.speed_power = 1 - int(is_high_res);
+      result.only_right_turns = false;
+    }
+    if (ImGui::SmallButton("Clustered")) {
+      result.turn_speed_power = 4;
+      result.speed_power = is_high_res ? 0 : 2;
+      result.only_right_turns = true;
+    }
+    ImGui::TreePop();
+  }
+
   const auto& soil_config = *component.get_soil()->read_config();
-  auto decay = soil_config.decay;
-  if (ImGui::SliderFloat("Decay", &decay, 0.001f, 0.5f)) {
-    result.decay = decay;
+
+  if (ImGui::TreeNode("Time")) {
+    static int item{};
+    static constexpr int num_items = 3;
+    const char* const items_str[num_items]{"Default", "Fast", "Faster"};
+    const float items[num_items]{1.0f, 4.0f, 8.0f};
+    if (ImGui::ListBox("", &item, items_str, num_items)) {
+      result.time_scale = items[item];
+    }
+    auto ts = soil_config.time_scale;
+    if (ImGui::SliderFloat("TimeScale", &ts, 0.01f, 8.0f)) {
+      result.time_scale = ts;
+    }
+    ImGui::TreePop();
   }
 
-  auto ds = soil_config.diffuse_speed;
-  if (ImGui::SliderFloat("DiffuseSpeed", &ds, 0.01f, 1.0f)) {
-    result.diffuse_speed = ds;
+  if (ImGui::TreeNode("Speed")) {
+    ImGui::Text("TurnSpeedPower %d", soil_config.turn_speed_power);
+    if (ImGui::SmallButton("ScaleTurnSpeed2")) {
+      result.turn_speed_power = soil_config.turn_speed_power + 1;
+    }
+    ImGui::SameLine();
+    if (ImGui::SmallButton("ScaleTurnSpeed0.5")) {
+      result.turn_speed_power = soil_config.turn_speed_power - 1;
+    }
+
+    ImGui::Text("Speed Power %d", soil_config.scale_speed_power);
+    if (ImGui::SmallButton("ScaleSpeed2")) {
+      result.speed_power = soil_config.scale_speed_power + 1;
+    }
+    ImGui::SameLine();
+    if (ImGui::SmallButton("ScaleSpeed0.5")) {
+      result.speed_power = soil_config.scale_speed_power - 1;
+    }
+    ImGui::TreePop();
   }
 
-  if (ImGui::Button("ResetDiffusion")) {
-    result.reset_diffuse_parameters = true;
-  }
+  if (ImGui::TreeNode("Diffusion")) {
+    auto decay = soil_config.decay;
+    if (ImGui::SliderFloat("Decay", &decay, 0.001f, 0.5f)) {
+      result.decay = decay;
+    }
 
-  bool diff_enabled = soil_config.diffuse_enabled;
-  if (ImGui::Checkbox("DiffuseEnabled", &diff_enabled)) {
-    result.diffuse_enabled = diff_enabled;
+    auto ds = soil_config.diffuse_speed;
+    if (ImGui::SliderFloat("DiffuseSpeed", &ds, 0.01f, 1.0f)) {
+      result.diffuse_speed = ds;
+    }
+
+    if (ImGui::Button("ResetDiffusion")) {
+      result.reset_diffuse_parameters = true;
+    }
+
+    bool diff_enabled = soil_config.diffuse_enabled;
+    if (ImGui::Checkbox("DiffuseEnabled", &diff_enabled)) {
+      result.diffuse_enabled = diff_enabled;
+    }
+
+    ImGui::TreePop();
   }
 
   bool allow_perturb = soil_config.allow_perturb_event;
   if (ImGui::Checkbox("AllowPerturbEvent", &allow_perturb)) {
     result.allow_perturb_event = allow_perturb;
-  }
-
-  auto ts = soil_config.time_scale;
-  if (ImGui::SliderFloat("TimeScale", &ts, 0.01f, 8.0f)) {
-    result.time_scale = ts;
   }
 
   bool circ_world = soil_config.circular_world;
@@ -110,26 +161,14 @@ SoilGUIUpdateResult SoilGUI::render(
     result.average_image = avg_img;
   }
 
-  ImGui::Checkbox("RenderB&W", use_bw);
-  ImGui::Checkbox("RenderFullScreen", full_screen);
-
-  ImGui::Text("TS Power %d", soil_config.turn_speed_power);
-  if (ImGui::SmallButton("ScaleTurnSpeed2")) {
-    result.turn_speed_power = soil_config.turn_speed_power + 1;
-  }
-  ImGui::SameLine();
-  if (ImGui::SmallButton("ScaleTurnSpeed0.5")) {
-    result.turn_speed_power = soil_config.turn_speed_power - 1;
+  if (ImGui::TreeNode("Render")) {
+    ImGui::Checkbox("RenderB&W", use_bw);
+    ImGui::Checkbox("RenderFullScreen", full_screen);
+    ImGui::TreePop();
   }
 
-  ImGui::Text("Speed Power %d", soil_config.scale_speed_power);
-  if (ImGui::SmallButton("ScaleSpeed2")) {
-    result.speed_power = soil_config.scale_speed_power + 1;
-  }
-  ImGui::SameLine();
-  if (ImGui::SmallButton("ScaleSpeed0.5")) {
-    result.speed_power = soil_config.scale_speed_power - 1;
-  }
+  ImGui::Text("%.3f ms/frame (%.1f FPS)", 1e3f / fps, fps);
+  ImGui::Text("%.3f ms/sim step", last_sim_t);
 
   ImGui::End();
   return result;

@@ -1,5 +1,4 @@
 #include "wgpu_imshow.hpp"
-#include "slime_mold.hpp"
 #include <webgpu/webgpu.h>
 
 namespace {
@@ -7,7 +6,6 @@ namespace {
 struct Config {
 //  static constexpr auto image_format = WGPUTextureFormat_RGBA32Float;
   static constexpr auto image_format = WGPUTextureFormat_RGBA8Unorm;
-  static constexpr int texture_dim = gen::SlimeMoldConfig::texture_dim;
   static constexpr int bytes_per_component = 1; //  u8 components
   static constexpr int num_components_per_pixel = 4;  //  rgb
 };
@@ -19,6 +17,7 @@ struct Uniforms {
 struct {
   bool prepared{};
   bool initialized{};
+  bool need_remake_bind_group{};
   WGPURenderPipeline pipeline{};
   WGPUPipelineLayout pipeline_layout{};
   WGPUBindGroupLayout pipeline_bind_group_layout{};
@@ -26,6 +25,7 @@ struct {
 
   WGPUTexture image{};
   WGPUTextureView image_view{};
+  uint32_t image_dim{};
   WGPUSampler image_sampler{};
   WGPUBuffer uniform_buffer{};
   Uniforms uniforms{};
@@ -128,10 +128,15 @@ WGPUBindGroupLayout create_bind_group_layout(WGPUDevice device) {
   return bg_layout;
 }
 
-WGPUBindGroup create_bind_group(
+void create_bind_group(
   WGPUDevice device, WGPUBindGroupLayout bg_layout,
   WGPUTextureView image, WGPUSampler image_sampler, WGPUBuffer uniform_buffer) {
   //
+  if (globals.bind_group) {
+    wgpuBindGroupRelease(globals.bind_group);
+    globals.bind_group = nullptr;
+  }
+
   WGPUBindGroupEntry bindings[3]{};
 
   auto& im_binding = bindings[0];
@@ -152,7 +157,7 @@ WGPUBindGroup create_bind_group(
   bind_group_desc.entryCount = 3;
   bind_group_desc.entries = bindings;
   WGPUBindGroup bind_group = wgpuDeviceCreateBindGroup(device, &bind_group_desc);
-  return bind_group;
+  globals.bind_group = bind_group;
 }
 
 bool create_uniform_buffer(WGPUDevice device) {
@@ -168,11 +173,20 @@ bool create_uniform_buffer(WGPUDevice device) {
   }
 }
 
-void create_image(WGPUDevice device) {
+void create_image(WGPUDevice device, uint32_t texture_dim) {
+  if (globals.image_view) {
+    wgpuTextureViewRelease(globals.image_view);
+    globals.image_view = nullptr;
+  }
+  if (globals.image) {
+    wgpuTextureDestroy(globals.image);
+    globals.image = nullptr;
+  }
+
   WGPUTextureDescriptor texture_desc{};
   texture_desc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
   texture_desc.dimension = WGPUTextureDimension_2D;
-  texture_desc.size = { Config::texture_dim, Config::texture_dim, 1 };
+  texture_desc.size = { texture_dim, texture_dim, 1 };
   texture_desc.format = Config::image_format;
   texture_desc.mipLevelCount = 1;
   texture_desc.sampleCount = 1;
@@ -197,6 +211,8 @@ void create_image(WGPUDevice device) {
   sampler_desc.minFilter = WGPUFilterMode_Linear;
   sampler_desc.magFilter = WGPUFilterMode_Linear;
   globals.image_sampler = wgpuDeviceCreateSampler(device, &sampler_desc);
+
+  globals.image_dim = texture_dim;
 
   //  @TODO
 //  wgpuTextureDestroy(texture);
@@ -286,7 +302,7 @@ bool try_initialize(const wgpu::Context& context) {
   }
 
   if (!globals.image) {
-    create_image((WGPUDevice) context.wgpu_device);
+    create_image((WGPUDevice) context.wgpu_device, context.texture_dim);
   }
 
   if (!globals.uniform_buffer) {
@@ -296,7 +312,7 @@ bool try_initialize(const wgpu::Context& context) {
   }
 
   if (!globals.bind_group) {
-    globals.bind_group = create_bind_group(
+    create_bind_group(
       (WGPUDevice) context.wgpu_device,
       globals.pipeline_bind_group_layout, globals.image_view,
       globals.image_sampler, globals.uniform_buffer);
@@ -310,12 +326,24 @@ bool try_initialize(const wgpu::Context& context) {
 void wgpu::begin_frame(const Context& context, const void* image_data) {
   globals.prepared = false;
 
+  if (context.texture_dim != globals.image_dim) {
+    create_image((WGPUDevice) context.wgpu_device, context.texture_dim);
+    globals.need_remake_bind_group = true;
+  }
+
   if (!globals.initialized) {
     if (!try_initialize(context)) {
       return;
     } else {
       globals.initialized = true;
     }
+  }
+
+  if (globals.need_remake_bind_group) {
+    create_bind_group(
+      (WGPUDevice) context.wgpu_device, globals.pipeline_bind_group_layout,
+      globals.image_view, globals.image_sampler, globals.uniform_buffer);
+    globals.need_remake_bind_group = false;
   }
 
   {
@@ -325,16 +353,18 @@ void wgpu::begin_frame(const Context& context, const void* image_data) {
     dst.mipLevel = 0;
     dst.texture = globals.image;
 
+    const uint32_t texture_dim = globals.image_dim;
+
     WGPUTextureDataLayout src_layout{};
     src_layout.bytesPerRow =
-      Config::texture_dim * Config::bytes_per_component * Config::num_components_per_pixel;
-    src_layout.rowsPerImage = Config::texture_dim;
+      texture_dim * Config::bytes_per_component * Config::num_components_per_pixel;
+    src_layout.rowsPerImage = texture_dim;
     const int tot_size = int(src_layout.bytesPerRow * src_layout.rowsPerImage);
 
     WGPUExtent3D write_size{};
     write_size.depthOrArrayLayers = 1;
-    write_size.width = Config::texture_dim;
-    write_size.height = Config::texture_dim;
+    write_size.width = texture_dim;
+    write_size.height = texture_dim;
 
     auto device = (WGPUDevice) context.wgpu_device;
     wgpuQueueWriteTexture(

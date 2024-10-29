@@ -16,6 +16,7 @@ public:
     bool overlay_player_position{true};
     float overlay_radius{8.0f};
     int desired_num_particles{};
+    int desired_texture_size{};
   };
 
 public:
@@ -29,6 +30,7 @@ public:
   Soil* get_soil() {
     return &soil;
   }
+  int get_texture_dim() const;
 
 private:
   Soil soil;

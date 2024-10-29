@@ -24,6 +24,7 @@ struct SoilGUIUpdateResult {
   std::optional<bool> reinitialize;
   std::optional<bool> reset_diffuse_parameters;
   std::optional<int> new_num_particles;
+  std::optional<int> new_texture_size;
   bool close{};
 };
 

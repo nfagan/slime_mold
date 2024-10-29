@@ -4,6 +4,9 @@
 #include "Vec3.hpp"
 #include <memory>
 
+#define DYNAMIC_TEXTURE_SIZE (1)
+#define DEFAULT_TEXTURE_SIZE (256)
+
 namespace gen {
 
 /*
@@ -27,7 +30,11 @@ struct SlimeMoldConfig {
     diffuse_enabled = true;
   }
 
-  static constexpr int texture_dim = 256;
+#if DYNAMIC_TEXTURE_SIZE
+  static int texture_dim;
+#else
+  static constexpr int texture_dim = DEFAULT_TEXTURE_SIZE;
+#endif
   static constexpr int num_texture_channels = 3;
   int num_particles{1000};
 

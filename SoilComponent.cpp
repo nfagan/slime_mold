@@ -10,8 +10,17 @@ void SoilComponent::reinitialize() {
   params.need_reinitialize = true;
 }
 
+int SoilComponent::get_texture_dim() const {
+  return gen::SlimeMoldConfig::texture_dim;
+}
+
 float SoilComponent::update() {
   if (params.initialized && params.need_reinitialize) {
+#if DYNAMIC_TEXTURE_SIZE
+    if (params.desired_texture_size > 0) {
+      gen::SlimeMoldConfig::texture_dim = params.desired_texture_size;
+    }
+#endif
     const int curr_num_particles = soil.get_config()->num_particles;
     soil.get_config()->num_particles = params.desired_num_particles > 0 ?
       params.desired_num_particles : curr_num_particles;
@@ -82,6 +91,10 @@ void SoilComponent::on_gui_update(const SoilGUIUpdateResult& res) {
   }
   if (res.new_num_particles) {
     params.desired_num_particles = res.new_num_particles.value();
+    params.need_reinitialize = true;
+  }
+  if (res.new_texture_size) {
+    params.desired_texture_size = res.new_texture_size.value();
     params.need_reinitialize = true;
   }
   if (res.reinitialize) {
