@@ -1,4 +1,5 @@
 #include "wgpu_imshow.hpp"
+#include "slime_mold.hpp"
 #include <webgpu/webgpu.h>
 
 namespace {
@@ -6,10 +7,13 @@ namespace {
 struct Config {
 //  static constexpr auto image_format = WGPUTextureFormat_RGBA32Float;
   static constexpr auto image_format = WGPUTextureFormat_RGBA8Unorm;
-  static constexpr int texture_dim = 256;
+  static constexpr int texture_dim = gen::SlimeMoldConfig::texture_dim;
   static constexpr int bytes_per_component = 1; //  u8 components
   static constexpr int num_components_per_pixel = 4;  //  rgb
-  static constexpr bool use_sampler = true;
+};
+
+struct Uniforms {
+  float enable_bw_viewport_width_height_full_screen[4];
 };
 
 struct {
@@ -23,6 +27,8 @@ struct {
   WGPUTexture image{};
   WGPUTextureView image_view{};
   WGPUSampler image_sampler{};
+  WGPUBuffer uniform_buffer{};
+  Uniforms uniforms{};
 } globals;
 
 const char* get_source() {
@@ -33,8 +39,13 @@ const char* get_source() {
     @location(0) uv: vec2f
   };
 
+  struct Uniforms {
+    enable_bw_viewport_width_height_full_screen: vec4f
+  };
+
   @group(0) @binding(0) var my_texture: texture_2d<f32>;
   @group(0) @binding(1) var my_texture_sampler: sampler;
+  @group(0) @binding(2) var<uniform> my_uniforms: Uniforms;
 
   @vertex
   fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> VertexOutput {
@@ -60,8 +71,26 @@ const char* get_source() {
 //    let color = vec3f(in.uv, 1.0f);
 //    let color = textureLoad(my_texture, uv, 0).rgb;
 
-    let color = textureSample(my_texture, my_texture_sampler, in.uv).rgb;
-    return vec4f(color, 1.0);
+    let viewport_dims = my_uniforms.enable_bw_viewport_width_height_full_screen.yz;
+    let abs_pixel = floor(in.uv * viewport_dims);
+    let adj_uv = (abs_pixel + vec2f(0.5f)) / vec2f(768.0f); //  tweak to set image size
+    let adj_mask = f32(
+      adj_uv.x <= 1.0f && adj_uv.y <= 1.0f && adj_uv.x >= 0.0f && adj_uv.y >= 0.0f);
+
+    let use_fs = my_uniforms.enable_bw_viewport_width_height_full_screen.w > 0.0f;
+    let pixel_mask = select(adj_mask, 1.0f, use_fs);
+    let use_uv = select(adj_uv, in.uv, use_fs);
+
+    let color = textureSample(my_texture, my_texture_sampler, use_uv).rgb;
+    let mu = (color.r + color.g + color.b) / 3.0f;
+    let color_mean = vec4f(mu, mu, mu, 1.0f);
+
+    let enable_bw = my_uniforms.enable_bw_viewport_width_height_full_screen.x > 0.0f;
+    if (enable_bw) {
+      return vec4f(vec3f(mu) * pixel_mask, 1.0f);
+    } else {
+      return vec4f(color * pixel_mask, 1.0);
+    }
   }
 
   )";
@@ -70,7 +99,7 @@ const char* get_source() {
 
 WGPUBindGroupLayout create_bind_group_layout(WGPUDevice device) {
   // the texture binding
-  WGPUBindGroupLayoutEntry binds[2]{};
+  WGPUBindGroupLayoutEntry binds[3]{};
 
   auto& tex_bind_layout = binds[0];
   tex_bind_layout.binding = 0;
@@ -83,10 +112,17 @@ WGPUBindGroupLayout create_bind_group_layout(WGPUDevice device) {
   tex_sampler_layout.visibility = WGPUShaderStage_Fragment;
   tex_sampler_layout.sampler.type = WGPUSamplerBindingType_Filtering;
 
+  auto& uniform_buffer_layout = binds[2];
+  uniform_buffer_layout.binding = 2;
+  uniform_buffer_layout.visibility = WGPUShaderStage_Fragment;
+  uniform_buffer_layout.buffer.type = WGPUBufferBindingType_Uniform;
+  uniform_buffer_layout.buffer.minBindingSize = sizeof(Uniforms);
+  uniform_buffer_layout.buffer.hasDynamicOffset = false;
+
   // create a bind group layout
   WGPUBindGroupLayoutDescriptor bg_layout_desc{};
   bg_layout_desc.nextInChain = nullptr;
-  bg_layout_desc.entryCount = Config::use_sampler ? 2 : 1;
+  bg_layout_desc.entryCount = 3;
   bg_layout_desc.entries = binds;
   WGPUBindGroupLayout bg_layout = wgpuDeviceCreateBindGroupLayout(device, &bg_layout_desc);
   return bg_layout;
@@ -94,9 +130,9 @@ WGPUBindGroupLayout create_bind_group_layout(WGPUDevice device) {
 
 WGPUBindGroup create_bind_group(
   WGPUDevice device, WGPUBindGroupLayout bg_layout,
-  WGPUTextureView image, WGPUSampler image_sampler) {
+  WGPUTextureView image, WGPUSampler image_sampler, WGPUBuffer uniform_buffer) {
   //
-  WGPUBindGroupEntry bindings[2]{};
+  WGPUBindGroupEntry bindings[3]{};
 
   auto& im_binding = bindings[0];
   im_binding.binding = 0;
@@ -106,12 +142,30 @@ WGPUBindGroup create_bind_group(
   sampler_binding.binding = 1;
   sampler_binding.sampler = image_sampler;
 
+  auto& buff_binding = bindings[2];
+  buff_binding.binding = 2;
+  buff_binding.buffer = uniform_buffer;
+  buff_binding.size = sizeof(Uniforms);
+
   WGPUBindGroupDescriptor bind_group_desc{};
   bind_group_desc.layout = bg_layout;
-  bind_group_desc.entryCount = Config::use_sampler ? 2 : 1;
+  bind_group_desc.entryCount = 3;
   bind_group_desc.entries = bindings;
   WGPUBindGroup bind_group = wgpuDeviceCreateBindGroup(device, &bind_group_desc);
   return bind_group;
+}
+
+bool create_uniform_buffer(WGPUDevice device) {
+  WGPUBufferDescriptor buff_desc{};
+  buff_desc.size = sizeof(Uniforms);
+  buff_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+  auto buff = wgpuDeviceCreateBuffer(device, &buff_desc);
+  if (!buff) {
+    return false;
+  } else {
+    globals.uniform_buffer = buff;
+    return true;
+  }
 }
 
 void create_image(WGPUDevice device) {
@@ -235,10 +289,17 @@ bool try_initialize(const wgpu::Context& context) {
     create_image((WGPUDevice) context.wgpu_device);
   }
 
+  if (!globals.uniform_buffer) {
+    if (!create_uniform_buffer((WGPUDevice) context.wgpu_device)) {
+      return false;
+    }
+  }
+
   if (!globals.bind_group) {
     globals.bind_group = create_bind_group(
       (WGPUDevice) context.wgpu_device,
-      globals.pipeline_bind_group_layout, globals.image_view, globals.image_sampler);
+      globals.pipeline_bind_group_layout, globals.image_view,
+      globals.image_sampler, globals.uniform_buffer);
   }
 
   return true;
@@ -257,24 +318,40 @@ void wgpu::begin_frame(const Context& context, const void* image_data) {
     }
   }
 
-  WGPUImageCopyTexture dst{};
-  dst.aspect = WGPUTextureAspect_All;
-  dst.mipLevel = 0;
-  dst.texture = globals.image;
+  {
+    //  image
+    WGPUImageCopyTexture dst{};
+    dst.aspect = WGPUTextureAspect_All;
+    dst.mipLevel = 0;
+    dst.texture = globals.image;
 
-  WGPUTextureDataLayout src_layout{};
-  src_layout.bytesPerRow = Config::texture_dim * Config::bytes_per_component * Config::num_components_per_pixel;
-  src_layout.rowsPerImage = Config::texture_dim;
-  const int tot_size = int(src_layout.bytesPerRow * src_layout.rowsPerImage);
+    WGPUTextureDataLayout src_layout{};
+    src_layout.bytesPerRow =
+      Config::texture_dim * Config::bytes_per_component * Config::num_components_per_pixel;
+    src_layout.rowsPerImage = Config::texture_dim;
+    const int tot_size = int(src_layout.bytesPerRow * src_layout.rowsPerImage);
 
-  WGPUExtent3D write_size{};
-  write_size.depthOrArrayLayers = 1;
-  write_size.width = Config::texture_dim;
-  write_size.height = Config::texture_dim;
+    WGPUExtent3D write_size{};
+    write_size.depthOrArrayLayers = 1;
+    write_size.width = Config::texture_dim;
+    write_size.height = Config::texture_dim;
 
-  auto device = (WGPUDevice) context.wgpu_device;
-  wgpuQueueWriteTexture(
-    wgpuDeviceGetQueue(device), &dst, image_data, tot_size, &src_layout, &write_size);
+    auto device = (WGPUDevice) context.wgpu_device;
+    wgpuQueueWriteTexture(
+      wgpuDeviceGetQueue(device), &dst, image_data, tot_size, &src_layout, &write_size);
+  }
+  {
+    //  uniform buffer
+    globals.uniforms.enable_bw_viewport_width_height_full_screen[0] = float(context.enable_bw);
+    globals.uniforms.enable_bw_viewport_width_height_full_screen[1] = float(context.viewport_width);
+    globals.uniforms.enable_bw_viewport_width_height_full_screen[2] = float(context.viewport_height);
+    globals.uniforms.enable_bw_viewport_width_height_full_screen[3] = float(context.full_screen);
+
+    auto device = (WGPUDevice) context.wgpu_device;
+    wgpuQueueWriteBuffer(
+      wgpuDeviceGetQueue(device), globals.uniform_buffer, 0,
+      &globals.uniforms, sizeof(Uniforms));
+  }
 
   globals.prepared = true;
 }

@@ -3,7 +3,9 @@
 #include "slime_mold.hpp"
 #include <imgui.h>
 
-SoilGUIUpdateResult SoilGUI::render(const SoilComponent& component, float fps, float sim_t) {
+SoilGUIUpdateResult SoilGUI::render(
+  const SoilComponent& component, float fps, float sim_t, bool* use_bw, bool* full_screen) {
+  //
   static uint32_t update_index{};
   static float last_sim_t{};
 
@@ -13,7 +15,47 @@ SoilGUIUpdateResult SoilGUI::render(const SoilComponent& component, float fps, f
 
   SoilGUIUpdateResult result;
 
-  ImGui::Begin("SlimeMoldGUI");
+  ImGui::Begin("GUI");
+
+  if (ImGui::Button("Reinitialize")) {
+    result.reinitialize = true;
+  }
+
+  {
+    static int item{};
+    const char* const num_particles_str[3]{"1000", "2000", "4000"};
+    const int num_particles[3]{1000, 2000, 4000};
+    if (ImGui::ListBox("NumParticles", &item, num_particles_str, 3)) {
+      result.new_num_particles = num_particles[item];
+    }
+  }
+
+  ImGui::Text("Presets");
+  if (ImGui::SmallButton("MidCoherence")) {
+    result.turn_speed_power = 2;
+    result.speed_power = 2;
+    result.only_right_turns = false;
+  }
+  if (ImGui::SmallButton("HighCoherence")) {
+    result.turn_speed_power = 3;
+    result.speed_power = 2;
+    result.only_right_turns = false;
+  }
+  if (ImGui::SmallButton("Chaotic")) {
+    result.turn_speed_power = 0;
+    result.speed_power = 2;
+    result.only_right_turns = true;
+  }
+  if (ImGui::SmallButton("Fragile")) {
+    result.turn_speed_power = 2;
+    result.speed_power = 1;
+    result.only_right_turns = false;
+  }
+  if (ImGui::SmallButton("Clustered")) {
+    result.turn_speed_power = 4;
+    result.speed_power = 2;
+    result.only_right_turns = true;
+  }
 
   ImGui::Text("%.3f ms/frame (%.1f FPS)", 1e3f / fps, fps);
   ImGui::Text("%.3f ms/sim step", last_sim_t);
@@ -32,6 +74,10 @@ SoilGUIUpdateResult SoilGUI::render(const SoilComponent& component, float fps, f
   auto ds = soil_config.diffuse_speed;
   if (ImGui::SliderFloat("DiffuseSpeed", &ds, 0.01f, 1.0f)) {
     result.diffuse_speed = ds;
+  }
+
+  if (ImGui::Button("ResetDiffusion")) {
+    result.reset_diffuse_parameters = true;
   }
 
   bool diff_enabled = soil_config.diffuse_enabled;
@@ -58,6 +104,14 @@ SoilGUIUpdateResult SoilGUI::render(const SoilComponent& component, float fps, f
   if (ImGui::Checkbox("OnlyRightTurns", &only_right_turns)) {
     result.only_right_turns = only_right_turns;
   }
+
+  bool avg_img = soil_config.average_image;
+  if (ImGui::Checkbox("AverageImage", &avg_img)) {
+    result.average_image = avg_img;
+  }
+
+  ImGui::Checkbox("RenderB&W", use_bw);
+  ImGui::Checkbox("RenderFullScreen", full_screen);
 
   ImGui::Text("TS Power %d", soil_config.turn_speed_power);
   if (ImGui::SmallButton("ScaleTurnSpeed2")) {

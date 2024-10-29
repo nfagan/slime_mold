@@ -1,7 +1,6 @@
 #include "slime_mold.hpp"
 #include "random.hpp"
 #include "util.hpp"
-#include <iostream>
 #include <chrono>
 
 namespace {
@@ -512,6 +511,19 @@ float gen::update_slime_mold_particles(SlimeParticle* particles,
 
   auto dt_ms = std::chrono::duration<double>(
     std::chrono::high_resolution_clock::now() - t0).count() * 1e3;
+
+  if (config.average_image) {
+    for (int i = 0; i < Config::texture_dim * Config::texture_dim; i++) {
+      float mu{};
+      for (int j = 0; j < 3; j++) {
+        mu += clamp(context->texture_data0[i * 3 + j], 0.0f, 1.0f);
+      }
+      mu /= 3.0f;
+      for (int j = 0; j < 3; j++) {
+        context->texture_data0[i * 3 + j] = mu;
+      }
+    }
+  }
 
   for (int i = 0; i < Config::texture_dim * Config::texture_dim; i++) {
     for (int j = 0; j < 3; j++) {

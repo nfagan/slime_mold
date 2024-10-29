@@ -44,6 +44,8 @@ namespace {
 
 struct {
   SoilComponent soil;
+  bool use_bw{true};
+  bool full_screen_image{};
 } globals;
 
 void do_my_init() {
@@ -57,7 +59,11 @@ float do_my_update() {
 void do_my_begin_frame() {
   wgpu::begin_frame({
     wgpu_device,
-    wgpu_preferred_fmt
+    wgpu_preferred_fmt,
+    globals.use_bw,
+    globals.full_screen_image,
+    wgpu_swap_chain_width,
+    wgpu_swap_chain_height
   }, globals.soil.get_soil()->read_rgbau8_image_data());
 }
 
@@ -66,7 +72,7 @@ void do_my_render_pass(WGPURenderPassEncoder enc) {
 }
 
 void do_my_gui_update(float fps, float sim_dt) {
-  auto res = SoilGUI::render(globals.soil, fps, sim_dt);
+  auto res = SoilGUI::render(globals.soil, fps, sim_dt, &globals.use_bw, &globals.full_screen_image);
   globals.soil.on_gui_update(res);
 }
 

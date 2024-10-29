@@ -14,8 +14,17 @@ namespace gen {
  */
 
 struct SlimeMoldConfig {
+  static constexpr float default_diffuse_speed = 0.95f;
+  static constexpr float default_decay = 0.004f;
+
   float dt() const {
     return 1.0f / 60.0f * time_scale;
+  }
+
+  void reset_diffuse_parameters() {
+    diffuse_speed = default_diffuse_speed;
+    decay = default_decay;
+    diffuse_enabled = true;
   }
 
   static constexpr int texture_dim = 256;
@@ -24,8 +33,8 @@ struct SlimeMoldConfig {
 
   static constexpr float starting_offset_span = 0.1f;
   int filter_size{3};
-  float decay{0.004f};
-  float diffuse_speed{0.95f};
+  float decay{default_decay};
+  float diffuse_speed{default_diffuse_speed};
   bool diffuse_enabled{true};
   float time_scale{1.0f};
 
@@ -36,6 +45,7 @@ struct SlimeMoldConfig {
   bool circular_world{true};
   bool allow_perturb_event{true};
   bool allow_signal_influence{true};
+  bool average_image{false};
 
   int scale_speed_power{0};
   int turn_speed_power{0};
