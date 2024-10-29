@@ -44,20 +44,27 @@ namespace {
 
 struct {
   SoilComponent soil;
+  bool use_bw{true};
+  bool full_screen_image{};
 } globals;
 
 void do_my_init() {
   globals.soil.initialize();
 }
 
-void do_my_update() {
-  globals.soil.update();
+float do_my_update() {
+  return globals.soil.update();
 }
 
 void do_my_begin_frame() {
   wgpu::begin_frame({
     wgpu_device,
-    wgpu_preferred_fmt
+    wgpu_preferred_fmt,
+    globals.use_bw,
+    globals.full_screen_image,
+    wgpu_swap_chain_width,
+    wgpu_swap_chain_height,
+    globals.soil.get_texture_dim()
   }, globals.soil.get_soil()->read_rgbau8_image_data());
 }
 
@@ -65,8 +72,8 @@ void do_my_render_pass(WGPURenderPassEncoder enc) {
   wgpu::draw_image(enc);
 }
 
-void do_my_gui_update(float fps) {
-  auto res = SoilGUI::render(globals.soil, fps);
+void do_my_gui_update(float fps, float sim_dt) {
+  auto res = SoilGUI::render(globals.soil, fps, sim_dt, &globals.use_bw, &globals.full_screen_image);
   globals.soil.on_gui_update(res);
 }
 
@@ -212,7 +219,7 @@ static void MainLoopStep(void* window)
    * My update
    */
 
-  do_my_update();
+  const float sim_dt = do_my_update();
 
   /*
    * End update
@@ -266,7 +273,7 @@ static void MainLoopStep(void* window)
    * My render
    */
 
-  do_my_gui_update(io.Framerate);
+  do_my_gui_update(io.Framerate, sim_dt);
 
   /*
    * End my render

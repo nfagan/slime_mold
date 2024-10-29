@@ -11,14 +11,18 @@ public:
   struct Params {
     bool enabled{true};
     bool initialized{};
+    bool need_reinitialize{};
     bool draw_debug_image{};
     bool overlay_player_position{true};
     float overlay_radius{8.0f};
+    int desired_num_particles{};
+    int desired_texture_size{};
   };
 
 public:
   void initialize();
-  void update();
+  void reinitialize();
+  float update();
   void on_gui_update(const SoilGUIUpdateResult& res);
   const Soil* get_soil() const {
     return &soil;
@@ -26,6 +30,7 @@ public:
   Soil* get_soil() {
     return &soil;
   }
+  int get_texture_dim() const;
 
 private:
   Soil soil;
