@@ -17,38 +17,25 @@ SoilGUIUpdateResult SoilGUI::render(
 
   ImGui::Begin("GUI");
 
-  if (ImGui::Button("Reinitialize")) {
-    result.reinitialize = true;
-  }
-
   bool enabled = component.params.enabled;
   if (ImGui::Checkbox("Enabled", &enabled)) {
     result.enabled = enabled;
   }
 
-  if (ImGui::TreeNode("NumParticles")) {
-    static int item{};
-    static constexpr int num_items = 7;
-    const char* const num_particles_str[num_items]{"1000", "2000", "4000", "8000", "16000", "25000", "32000"};
-    const int num_particles[num_items]{1000, 2000, 4000, 8000, 16000, 25000, 32000};
-    if (ImGui::ListBox("", &item, num_particles_str, num_items)) {
-      result.new_num_particles = num_particles[item];
-    }
-    ImGui::TreePop();
+  if (ImGui::Button("Reinitialize")) {
+    result.reinitialize = true;
   }
 
-#if DYNAMIC_TEXTURE_SIZE
-  if (ImGui::TreeNode("ImageSize")) {
-    static int item{};
-    static constexpr int num_items = 3;
-    const char* const items_str[num_items]{"256x256", "512x512", "1024x1024"};
-    const int items[num_items]{256, 512, 1024};
-    if (ImGui::ListBox("", &item, items_str, num_items)) {
-      result.new_texture_size = items[item];
-    }
-    ImGui::TreePop();
+  if (ImGui::Button("ReinitializeHighRes")) {
+    result.new_texture_size = 1024;
+    result.new_num_particles = 25000;
   }
-#endif
+
+  ImGui::SameLine();
+  if (ImGui::Button("ReinitializeLowRes")) {
+    result.new_texture_size = 256;
+    result.new_num_particles = 1000;
+  }
 
   if (ImGui::TreeNode("Presets")) {
     const bool is_high_res = gen::SlimeMoldConfig::texture_dim > 512;
@@ -79,6 +66,30 @@ SoilGUIUpdateResult SoilGUI::render(
     }
     ImGui::TreePop();
   }
+
+  if (ImGui::TreeNode("NumParticles")) {
+    static int item{};
+    static constexpr int num_items = 7;
+    const char* const num_particles_str[num_items]{"1000", "2000", "4000", "8000", "16000", "25000", "32000"};
+    const int num_particles[num_items]{1000, 2000, 4000, 8000, 16000, 25000, 32000};
+    if (ImGui::ListBox("", &item, num_particles_str, num_items)) {
+      result.new_num_particles = num_particles[item];
+    }
+    ImGui::TreePop();
+  }
+
+#if DYNAMIC_TEXTURE_SIZE
+  if (ImGui::TreeNode("ImageSize")) {
+    static int item{};
+    static constexpr int num_items = 3;
+    const char* const items_str[num_items]{"256x256", "512x512", "1024x1024"};
+    const int items[num_items]{256, 512, 1024};
+    if (ImGui::ListBox("", &item, items_str, num_items)) {
+      result.new_texture_size = items[item];
+    }
+    ImGui::TreePop();
+  }
+#endif
 
   const auto& soil_config = *component.get_soil()->read_config();
 
