@@ -1,5 +1,8 @@
 #include "wgpu_imshow.hpp"
 #include <webgpu/webgpu.h>
+#include <webgpu/webgpu_cpp.h>
+#include <emscripten/html5_webgpu.h>
+#include <cstdio>
 
 namespace {
 
@@ -15,6 +18,13 @@ struct Uniforms {
 };
 
 struct {
+  WGPUDevice wgpu_device{};
+  WGPUSurface wgpu_surface{};
+  WGPUTextureFormat wgpu_preferred_surface_fmt{WGPUTextureFormat_RGBA8Unorm};
+  WGPUSwapChain wgpu_swap_chain{};
+  int swap_chain_width{};
+  int swap_chain_height{};
+
   bool prepared{};
   bool initialized{};
   bool need_remake_bind_group{};
@@ -219,9 +229,7 @@ void create_image(WGPUDevice device, uint32_t texture_dim) {
 //  wgpuTextureRelease(texture);
 }
 
-bool create_pipeline(const wgpu::Context& context) {
-  auto device = (WGPUDevice) context.wgpu_device;
-
+bool create_pipeline(WGPUDevice device, WGPUTextureFormat surface_format) {
   WGPURenderPipelineDescriptor pipe_desc{};
 
   //  vert
@@ -272,7 +280,7 @@ bool create_pipeline(const wgpu::Context& context) {
   pipe_desc.multisample.alphaToCoverageEnabled = false;
 
   WGPUColorTargetState colorTarget{};
-  colorTarget.format = (WGPUTextureFormat) context.surface_format;
+  colorTarget.format = surface_format;
   colorTarget.blend = &blend_state;
   colorTarget.writeMask = WGPUColorWriteMask_All; // We could write to only some of the color channels.
 
@@ -296,43 +304,113 @@ bool create_pipeline(const wgpu::Context& context) {
   return true;
 }
 
-bool try_initialize(const wgpu::Context& context) {
-  if (!create_pipeline(context)) {
+bool try_initialize(WGPUDevice wgpu_device, const wgpu::Context& context) {
+  if (!create_pipeline(wgpu_device, globals.wgpu_preferred_surface_fmt)) {
     return false;
   }
 
   if (!globals.image) {
-    create_image((WGPUDevice) context.wgpu_device, context.texture_dim);
+    create_image(wgpu_device, context.texture_dim);
   }
 
   if (!globals.uniform_buffer) {
-    if (!create_uniform_buffer((WGPUDevice) context.wgpu_device)) {
+    if (!create_uniform_buffer(wgpu_device)) {
       return false;
     }
   }
 
   if (!globals.bind_group) {
     create_bind_group(
-      (WGPUDevice) context.wgpu_device,
-      globals.pipeline_bind_group_layout, globals.image_view,
+      wgpu_device, globals.pipeline_bind_group_layout, globals.image_view,
       globals.image_sampler, globals.uniform_buffer);
   }
 
   return true;
 }
 
+void print_wgpu_error(WGPUErrorType error_type, const char* message, void*) {
+  const char* error_type_lbl = "";
+  switch (error_type) {
+    case WGPUErrorType_Validation:  error_type_lbl = "Validation"; break;
+    case WGPUErrorType_OutOfMemory: error_type_lbl = "Out of memory"; break;
+    case WGPUErrorType_Unknown:     error_type_lbl = "Unknown"; break;
+    case WGPUErrorType_DeviceLost:  error_type_lbl = "Device lost"; break;
+    default:                        error_type_lbl = "Unknown";
+  }
+  printf("%s error: %s\n", error_type_lbl, message);
+}
+
 } //  anon
+
+void* wgpu::get_device() {
+  return globals.wgpu_device;
+}
+
+unsigned int wgpu::get_preferred_surface_format() {
+  return (unsigned int) globals.wgpu_preferred_surface_fmt;
+}
+
+bool wgpu::need_resize_surface(int w, int h) {
+  return w != globals.swap_chain_width || h != globals.swap_chain_height;
+}
+
+void wgpu::resize_surface(int w, int h) {
+  if (globals.wgpu_swap_chain) {
+    wgpuSwapChainRelease(globals.wgpu_swap_chain);
+  }
+  globals.swap_chain_width = w;
+  globals.swap_chain_height = h;
+  WGPUSwapChainDescriptor swap_chain_desc = {};
+  swap_chain_desc.usage = WGPUTextureUsage_RenderAttachment;
+  swap_chain_desc.format = globals.wgpu_preferred_surface_fmt;
+  swap_chain_desc.width = w;
+  swap_chain_desc.height = h;
+  swap_chain_desc.presentMode = WGPUPresentMode_Fifo;
+  globals.wgpu_swap_chain = wgpuDeviceCreateSwapChain(
+    globals.wgpu_device, globals.wgpu_surface, &swap_chain_desc);
+}
+
+bool wgpu::init() {
+  globals.wgpu_device = emscripten_webgpu_get_device();
+  if (!globals.wgpu_device) {
+    return false;
+  }
+
+  wgpuDeviceSetUncapturedErrorCallback(globals.wgpu_device, print_wgpu_error, nullptr);
+
+  // Use C++ wrapper due to misbehavior in Emscripten.
+  // Some offset computation for wgpuInstanceCreateSurface in JavaScript
+  // seem to be inline with struct alignments in the C++ structure
+  wgpu::SurfaceDescriptorFromCanvasHTMLSelector html_surface_desc = {};
+  html_surface_desc.selector = "#canvas";
+
+  wgpu::SurfaceDescriptor surface_desc = {};
+  surface_desc.nextInChain = &html_surface_desc;
+
+  wgpu::Instance instance = wgpuCreateInstance(nullptr);
+  wgpu::Surface surface = instance.CreateSurface(&surface_desc);
+  wgpu::Adapter adapter = {};
+
+  globals.wgpu_preferred_surface_fmt = (WGPUTextureFormat)surface.GetPreferredFormat(adapter);
+  globals.wgpu_surface = surface.Release();
+
+  return true;
+}
 
 void wgpu::begin_frame(const Context& context, const void* image_data) {
   globals.prepared = false;
 
+  if (!globals.wgpu_device) {
+    return;
+  }
+
   if (context.texture_dim != globals.image_dim) {
-    create_image((WGPUDevice) context.wgpu_device, context.texture_dim);
+    create_image((WGPUDevice) globals.wgpu_device, context.texture_dim);
     globals.need_remake_bind_group = true;
   }
 
   if (!globals.initialized) {
-    if (!try_initialize(context)) {
+    if (!try_initialize(globals.wgpu_device, context)) {
       return;
     } else {
       globals.initialized = true;
@@ -341,7 +419,7 @@ void wgpu::begin_frame(const Context& context, const void* image_data) {
 
   if (globals.need_remake_bind_group) {
     create_bind_group(
-      (WGPUDevice) context.wgpu_device, globals.pipeline_bind_group_layout,
+      (WGPUDevice) globals.wgpu_device, globals.pipeline_bind_group_layout,
       globals.image_view, globals.image_sampler, globals.uniform_buffer);
     globals.need_remake_bind_group = false;
   }
@@ -366,18 +444,18 @@ void wgpu::begin_frame(const Context& context, const void* image_data) {
     write_size.width = texture_dim;
     write_size.height = texture_dim;
 
-    auto device = (WGPUDevice) context.wgpu_device;
+    auto device = (WGPUDevice) globals.wgpu_device;
     wgpuQueueWriteTexture(
       wgpuDeviceGetQueue(device), &dst, image_data, tot_size, &src_layout, &write_size);
   }
   {
     //  uniform buffer
     globals.uniforms.enable_bw_viewport_width_height_full_screen[0] = float(context.enable_bw);
-    globals.uniforms.enable_bw_viewport_width_height_full_screen[1] = float(context.viewport_width);
-    globals.uniforms.enable_bw_viewport_width_height_full_screen[2] = float(context.viewport_height);
+    globals.uniforms.enable_bw_viewport_width_height_full_screen[1] = float(globals.swap_chain_width);
+    globals.uniforms.enable_bw_viewport_width_height_full_screen[2] = float(globals.swap_chain_height);
     globals.uniforms.enable_bw_viewport_width_height_full_screen[3] = float(context.full_screen);
 
-    auto device = (WGPUDevice) context.wgpu_device;
+    auto device = (WGPUDevice) globals.wgpu_device;
     wgpuQueueWriteBuffer(
       wgpuDeviceGetQueue(device), globals.uniform_buffer, 0,
       &globals.uniforms, sizeof(Uniforms));
@@ -386,13 +464,34 @@ void wgpu::begin_frame(const Context& context, const void* image_data) {
   globals.prepared = true;
 }
 
-void wgpu::draw_image(void* rp) {
-  if (!globals.prepared) {
-    return;
+void wgpu::render(const std::function<void(void*)>& before_pass_end) {
+  const float cc[4] = {0.45f, 0.55f, 0.60f, 1.00f};
+  WGPURenderPassColorAttachment color_attachments = {};
+  color_attachments.loadOp = WGPULoadOp_Clear;
+  color_attachments.storeOp = WGPUStoreOp_Store;
+  color_attachments.clearValue = {cc[0], cc[1], cc[2], cc[3]};
+  color_attachments.view = wgpuSwapChainGetCurrentTextureView(globals.wgpu_swap_chain);
+  WGPURenderPassDescriptor render_pass_desc = {};
+  render_pass_desc.colorAttachmentCount = 1;
+  render_pass_desc.colorAttachments = &color_attachments;
+  render_pass_desc.depthStencilAttachment = nullptr;
+
+  WGPUCommandEncoderDescriptor enc_desc = {};
+  WGPUCommandEncoder encoder = wgpuDeviceCreateCommandEncoder(globals.wgpu_device, &enc_desc);
+
+  WGPURenderPassEncoder render_pass = wgpuCommandEncoderBeginRenderPass(encoder, &render_pass_desc);
+
+  if (globals.prepared) {
+    wgpuRenderPassEncoderSetPipeline(render_pass, globals.pipeline);
+    wgpuRenderPassEncoderSetBindGroup(render_pass, 0, globals.bind_group, 0, nullptr);
+    wgpuRenderPassEncoderDraw(render_pass, 3, 1, 0, 0);
   }
 
-  auto render_pass = (WGPURenderPassEncoder) rp;
-  wgpuRenderPassEncoderSetPipeline(render_pass, globals.pipeline);
-  wgpuRenderPassEncoderSetBindGroup(render_pass, 0, globals.bind_group, 0, nullptr);
-  wgpuRenderPassEncoderDraw(render_pass, 3, 1, 0, 0);
+  before_pass_end(render_pass);
+  wgpuRenderPassEncoderEnd(render_pass);
+
+  WGPUCommandBufferDescriptor cmd_buffer_desc = {};
+  WGPUCommandBuffer cmd_buffer = wgpuCommandEncoderFinish(encoder, &cmd_buffer_desc);
+  WGPUQueue queue = wgpuDeviceGetQueue(globals.wgpu_device);
+  wgpuQueueSubmit(queue, 1, &cmd_buffer);
 }
