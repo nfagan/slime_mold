@@ -1,17 +1,9 @@
 #include "SoilGUI.hpp"
-#if GUI_USE_SLIME_MOLD_COMPONENT
 #include "slime_mold_component.hpp"
-#else
-#include "SoilComponent.hpp"
-#endif
 #include "slime_mold.hpp"
 #include <imgui.h>
 
-#if GUI_USE_SLIME_MOLD_COMPONENT
 SoilGUIUpdateResult SoilGUI::render(const SlimeMoldComponent& component, const SoilGUIParams& params) {
-#else
-SoilGUIUpdateResult SoilGUI::render(const SoilComponent& component, const SoilGUIParams& params) {
-#endif
   float fps = params.app_fps;
   float sim_t = params.sim_t;
   bool* use_bw = params.use_bw;
@@ -116,11 +108,7 @@ SoilGUIUpdateResult SoilGUI::render(const SoilComponent& component, const SoilGU
   }
 #endif
 
-#if GUI_USE_SLIME_MOLD_COMPONENT
   const auto& soil_config = component.sim.config;
-#else
-  const auto& soil_config = *component.get_soil()->read_config();
-#endif
 
   if (ImGui::TreeNode("Time")) {
     static int item{};

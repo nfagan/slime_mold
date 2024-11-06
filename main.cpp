@@ -1,10 +1,4 @@
-#define MAIN_USE_SLIME_MOLD_COMPONENT (1)
-
-#if MAIN_USE_SLIME_MOLD_COMPONENT
 #include "slime_mold_component.hpp"
-#else
-#include "SoilComponent.hpp"
-#endif
 #include "SoilGUI.hpp"
 #include "wgpu_imshow.hpp"
 
@@ -20,11 +14,7 @@ static void print_glfw_error(int error, const char* description);
 namespace {
 
 struct {
-#if MAIN_USE_SLIME_MOLD_COMPONENT
-  SlimeMoldComponent soil;
-#else
-  SoilComponent soil;
-#endif
+  SlimeMoldComponent sm;
   bool use_bw{true};
   bool full_screen_image{};
   float cursor_x{};
@@ -32,7 +22,7 @@ struct {
 } globals;
 
 float main_update() {
-  return globals.soil.update();
+  return globals.sm.update();
 }
 
 void main_gui_update(float sim_dt) {
@@ -40,9 +30,9 @@ void main_gui_update(float sim_dt) {
 
   wgpu::gui_new_frame();
 
-  auto res = SoilGUI::render(globals.soil, {
+  auto res = SoilGUI::render(globals.sm, {
     fps, sim_dt, &globals.use_bw, &globals.full_screen_image, globals.cursor_x, globals.cursor_y});
-  globals.soil.on_gui_update(res);
+  globals.sm.on_gui_update(res);
 }
 
 void main_render() {
@@ -120,17 +110,13 @@ void main_begin_frame(GLFWwindow* window) {
     glfwSetWindowSize((GLFWwindow*) window, browser_w, browser_h);
   }
 
-#if MAIN_USE_SLIME_MOLD_COMPONENT
-  const uint8_t* tex_data = globals.soil.read_rgbau8_image_data();
-#else
-  const uint8_t* tex_data = globals.soil.get_soil()->read_rgbau8_image_data();
-#endif
+  const uint8_t* tex_data = globals.sm.read_rgbau8_image_data();
   wgpu::begin_frame({
     width,
     height,
     globals.use_bw,
     globals.full_screen_image,
-    globals.soil.get_texture_dim()
+    globals.sm.get_texture_dim()
   }, tex_data);
 }
 
