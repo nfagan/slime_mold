@@ -575,24 +575,3 @@ void gen::set_particle_speed_power(
 void gen::set_particle_right_only(SlimeParticle* particles, SlimeMoldConfig& config, bool value) {
   set_right_only(particles, config.num_particles, value);
 }
-
-Vec3f gen::sample_slime_mold_texture_data01(const float* data, const Vec2f& p01, float r01) {
-  const bool average = true;
-  auto v = sense_circular(data, p01, r01, average);
-  return clamp_each(v, Vec3f{}, Vec3f{1.0f});
-}
-
-void gen::add_value(float* data, const Vec2f& p01, float radius01, const Vec3f& v3) {
-  const auto nc = Config::num_texture_channels;
-  const auto td = Config::texture_dim;
-  const float v[3]{v3.x, v3.y, v3.z};
-  clamped_add(data, td, td, nc, p01, radius01, v);
-}
-
-void gen::add_value(
-  float* data, int tex_dim, int tex_components,
-  const Vec2f& p01, float radius01, const Vec3f& v3) {
-  //
-  const float v[3]{v3.x, v3.y, v3.z};
-  clamped_add(data, tex_dim, tex_dim, tex_components, p01, radius01, v);
-}
