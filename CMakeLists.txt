@@ -18,6 +18,8 @@ add_executable(slime_mold
         SoilComponent.cpp
         SoilGUI.cpp
         wgpu_imshow.cpp
+        slime_mold_component.hpp
+        slime_mold_component.cpp
         #   imgui
         deps/imgui/imgui.cpp
         deps/imgui/imgui_demo.cpp

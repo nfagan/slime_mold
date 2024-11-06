@@ -2,7 +2,13 @@
 
 #include <optional>
 
+#define GUI_USE_SLIME_MOLD_COMPONENT (1)
+
+#if GUI_USE_SLIME_MOLD_COMPONENT
+class SlimeMoldComponent;
+#else
 class SoilComponent;
+#endif
 
 struct SoilGUIUpdateResult {
   std::optional<bool> enabled;
@@ -39,5 +45,9 @@ struct SoilGUIParams {
 
 class SoilGUI {
 public:
+#if GUI_USE_SLIME_MOLD_COMPONENT
+  static SoilGUIUpdateResult render(const SlimeMoldComponent& component, const SoilGUIParams& params);
+#else
   static SoilGUIUpdateResult render(const SoilComponent& component, const SoilGUIParams& params);
+#endif
 };

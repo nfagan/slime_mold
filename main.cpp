@@ -1,4 +1,10 @@
+#define MAIN_USE_SLIME_MOLD_COMPONENT (1)
+
+#if MAIN_USE_SLIME_MOLD_COMPONENT
+#include "slime_mold_component.hpp"
+#else
 #include "SoilComponent.hpp"
+#endif
 #include "SoilGUI.hpp"
 #include "wgpu_imshow.hpp"
 
@@ -14,7 +20,11 @@ static void print_glfw_error(int error, const char* description);
 namespace {
 
 struct {
+#if MAIN_USE_SLIME_MOLD_COMPONENT
+  SlimeMoldComponent soil;
+#else
   SoilComponent soil;
+#endif
   bool use_bw{true};
   bool full_screen_image{};
   float cursor_x{};
@@ -110,13 +120,18 @@ void main_begin_frame(GLFWwindow* window) {
     glfwSetWindowSize((GLFWwindow*) window, browser_w, browser_h);
   }
 
+#if MAIN_USE_SLIME_MOLD_COMPONENT
+  const uint8_t* tex_data = globals.soil.read_rgbau8_image_data();
+#else
+  const uint8_t* tex_data = globals.soil.get_soil()->read_rgbau8_image_data();
+#endif
   wgpu::begin_frame({
     width,
     height,
     globals.use_bw,
     globals.full_screen_image,
     globals.soil.get_texture_dim()
-  }, globals.soil.get_soil()->read_rgbau8_image_data());
+  }, tex_data);
 }
 
 static void main_loop(void* window) {
