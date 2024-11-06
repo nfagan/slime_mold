@@ -43,15 +43,6 @@ void SoilComponent::on_gui_update(const SoilGUIUpdateResult& res) {
   if (res.enabled) {
     params.enabled = res.enabled.value();
   }
-  if (res.draw_texture) {
-    params.draw_debug_image = res.draw_texture.value();
-  }
-  if (res.overlay_player_position) {
-    params.overlay_player_position = res.overlay_player_position.value();
-  }
-  if (res.overlay_radius) {
-    params.overlay_radius = res.overlay_radius.value();
-  }
   auto* config = soil.get_config();
   if (res.circular_world) {
     config->circular_world = res.circular_world.value();

@@ -12,9 +12,11 @@ struct SoilImpl {
 
 namespace {
 
-void set_sim_context_ptrs(gen::SlimeMoldSimulationContext& context,
-                          gen::DefaultSlimeMoldSimulationTextureData& tex_data,
-                          const gen::SlimeMoldParams* params) {
+void set_sim_context_ptrs(
+  gen::SlimeMoldSimulationContext& context,
+  gen::DefaultSlimeMoldSimulationTextureData& tex_data,
+  const gen::SlimeMoldParams* params) {
+  //
   context.texture_data0 = tex_data.texture_data0.get();
   context.texture_data1 = tex_data.texture_data1.get();
   context.texture_data2 = tex_data.texture_data2.get();
@@ -24,34 +26,7 @@ void set_sim_context_ptrs(gen::SlimeMoldSimulationContext& context,
   context.params = params;
 }
 
-constexpr float world_span() {
-  return 512.0f;
-}
-
-constexpr Bounds2f world_bound() {
-  return Bounds2f{Vec2f{-world_span() * 0.5f}, Vec2f{world_span() * 0.5f}};
-}
-
-Vec2f world_position_to_fraction(const Vec2f& p_world) {
-  const Bounds2f bounds = world_bound();
-  return bounds.to_fraction(p_world);
-}
-
-float world_length_to_fraction(float v_world) {
-  return v_world / world_span();
-}
-
 } //  anon
-
-Soil::Soil(Soil&& other) noexcept : impl{other.impl} {
-  other.impl = nullptr;
-}
-
-Soil& Soil::operator=(Soil&& other) noexcept {
-  Soil tmp{std::move(other)};
-  std::swap(impl, tmp.impl);
-  return *this;
-}
 
 Soil::Soil() : impl{new SoilImpl()} {
   //
@@ -79,33 +54,6 @@ float Soil::update() {
   return res;
 }
 
-Vec3f Soil::sample_quality01(const Vec2f& world_position_xz, float radius_world) const {
-  if (!impl->initialized) {
-    return Vec3f{};
-  }
-  auto p01 = world_position_to_fraction(world_position_xz);
-  float r01 = world_length_to_fraction(radius_world);
-  return gen::sample_slime_mold_texture_data01(impl->texture_data.texture_data0.get(), p01, r01);
-}
-
-void Soil::add_quality01(const Vec2f& world_position_xz, float radius_world, const Vec3f& value) {
-  if (impl->initialized) {
-    gen::add_value(
-      impl->texture_data.texture_data0.get(),
-      world_position_to_fraction(world_position_xz),
-      world_length_to_fraction(radius_world),
-      value);
-  }
-}
-
-float Soil::to_length01(float v) const {
-  return world_length_to_fraction(v);
-}
-
-Vec2f Soil::to_position01(const Vec2f& p_xz) const {
-  return world_position_to_fraction(p_xz);
-}
-
 void Soil::set_particle_turn_speed_power(int pow) {
   if (impl->initialized) {
     gen::set_particle_turn_speed_power(impl->particles.get(), impl->config, pow);
@@ -122,10 +70,6 @@ void Soil::set_particle_use_only_right_turns(bool v) {
   if (impl->initialized) {
     gen::set_particle_right_only(impl->particles.get(), impl->config, v);
   }
-}
-
-const float* Soil::read_image_data() const {
-  return impl->texture_data.texture_data0.get();
 }
 
 const uint8_t* Soil::read_rgbau8_image_data() const {

@@ -12,9 +12,6 @@ public:
     bool enabled{true};
     bool initialized{};
     bool need_reinitialize{};
-    bool draw_debug_image{};
-    bool overlay_player_position{true};
-    float overlay_radius{8.0f};
     int desired_num_particles{};
     int desired_texture_size{};
   };
