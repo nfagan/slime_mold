@@ -1,6 +1,5 @@
 #include "slime_mold.hpp"
-#include "random.hpp"
-#include "util.hpp"
+#include "base_math.hpp"
 #include <chrono>
 
 #if DYNAMIC_TEXTURE_SIZE

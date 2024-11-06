@@ -1,6 +1,5 @@
 #include "Soil.hpp"
 #include "slime_mold.hpp"
-#include "Bounds2.hpp"
 
 struct SoilImpl {
   gen::SlimeMoldParams params;

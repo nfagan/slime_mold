@@ -12,7 +12,8 @@ set(CMAKE_CXX_STANDARD 20)
 add_executable(slime_mold
         main.cpp
         slime_mold.cpp
-        random.cpp
+        base_math.hpp
+        base_math.cpp
         Soil.cpp
         SoilComponent.cpp
         SoilGUI.cpp

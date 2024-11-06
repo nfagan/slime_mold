@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Vec2.hpp"
-#include "Vec3.hpp"
+#include "base_math.hpp"
 #include <memory>
 
 #define DYNAMIC_TEXTURE_SIZE (1)

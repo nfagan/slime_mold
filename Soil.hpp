@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Vec2.hpp"
-#include "Vec3.hpp"
+#include "base_math.hpp"
 
 struct SoilImpl;
 
