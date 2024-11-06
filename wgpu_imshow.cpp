@@ -1,4 +1,7 @@
 #include "wgpu_imshow.hpp"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_wgpu.h"
+#include <glfw/glfw3.h>
 #include <webgpu/webgpu.h>
 #include <webgpu/webgpu_cpp.h>
 #include <emscripten/html5_webgpu.h>
@@ -340,21 +343,11 @@ void print_wgpu_error(WGPUErrorType error_type, const char* message, void*) {
   printf("%s error: %s\n", error_type_lbl, message);
 }
 
-} //  anon
-
-void* wgpu::get_device() {
-  return globals.wgpu_device;
-}
-
-unsigned int wgpu::get_preferred_surface_format() {
-  return (unsigned int) globals.wgpu_preferred_surface_fmt;
-}
-
-bool wgpu::need_resize_surface(int w, int h) {
+bool need_resize_surface(int w, int h) {
   return w != globals.swap_chain_width || h != globals.swap_chain_height;
 }
 
-void wgpu::resize_surface(int w, int h) {
+void resize_surface(int w, int h) {
   if (globals.wgpu_swap_chain) {
     wgpuSwapChainRelease(globals.wgpu_swap_chain);
   }
@@ -369,6 +362,9 @@ void wgpu::resize_surface(int w, int h) {
   globals.wgpu_swap_chain = wgpuDeviceCreateSwapChain(
     globals.wgpu_device, globals.wgpu_surface, &swap_chain_desc);
 }
+
+
+} //  anon
 
 bool wgpu::init() {
   globals.wgpu_device = emscripten_webgpu_get_device();
@@ -397,11 +393,42 @@ bool wgpu::init() {
   return true;
 }
 
+void wgpu::gui_init(void* window_ptr) {
+  const auto window = (GLFWwindow*) window_ptr;
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+  io.IniFilename = nullptr;
+  ImGui::StyleColorsDark();
+  // Setup Platform/Renderer backends
+  ImGui_ImplGlfw_InitForOther(window, true);
+  ImGui_ImplWGPU_Init(
+    globals.wgpu_device, 3,
+    globals.wgpu_preferred_surface_fmt, WGPUTextureFormat_Undefined);
+#ifndef IMGUI_DISABLE_FILE_FUNCTIONS
+  io.Fonts->AddFontFromFileTTF("fonts/DroidSans.ttf", 16.0f);
+#endif
+}
+
+void wgpu::gui_new_frame() {
+  ImGui_ImplWGPU_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+}
+
 void wgpu::begin_frame(const Context& context, const void* image_data) {
   globals.prepared = false;
 
   if (!globals.wgpu_device) {
     return;
+  }
+
+  if (need_resize_surface(context.surface_width, context.surface_height)) {
+    ImGui_ImplWGPU_InvalidateDeviceObjects();
+    resize_surface(context.surface_width, context.surface_height);
+    ImGui_ImplWGPU_CreateDeviceObjects();
   }
 
   if (context.texture_dim != globals.image_dim) {
@@ -464,7 +491,9 @@ void wgpu::begin_frame(const Context& context, const void* image_data) {
   globals.prepared = true;
 }
 
-void wgpu::render(const std::function<void(void*)>& before_pass_end) {
+void wgpu::render() {
+  ImGui::Render();
+
   const float cc[4] = {0.45f, 0.55f, 0.60f, 1.00f};
   WGPURenderPassColorAttachment color_attachments = {};
   color_attachments.loadOp = WGPULoadOp_Clear;
@@ -487,7 +516,7 @@ void wgpu::render(const std::function<void(void*)>& before_pass_end) {
     wgpuRenderPassEncoderDraw(render_pass, 3, 1, 0, 0);
   }
 
-  before_pass_end(render_pass);
+  ImGui_ImplWGPU_RenderDrawData(ImGui::GetDrawData(), render_pass);
   wgpuRenderPassEncoderEnd(render_pass);
 
   WGPUCommandBufferDescriptor cmd_buffer_desc = {};
