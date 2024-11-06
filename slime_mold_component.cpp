@@ -1,6 +1,6 @@
 #include "slime_mold_component.hpp"
 #include "slime_mold.hpp"
-#include "SoilGUI.hpp"
+#include "gui.hpp"
 
 namespace {
 
@@ -99,7 +99,7 @@ float SlimeMoldComponent::update() {
   return res;
 }
 
-void SlimeMoldComponent::on_gui_update(const SoilGUIUpdateResult& res) {
+void SlimeMoldComponent::on_gui_update(const GUIUpdateResult& res) {
   if (res.enabled) {
     params.enabled = res.enabled.value();
   }

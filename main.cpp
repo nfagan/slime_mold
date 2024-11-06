@@ -1,5 +1,5 @@
 #include "slime_mold_component.hpp"
-#include "SoilGUI.hpp"
+#include "gui.hpp"
 #include "wgpu_imshow.hpp"
 
 #include "imgui.h"
@@ -30,7 +30,7 @@ void main_gui_update(float sim_dt) {
 
   wgpu::gui_new_frame();
 
-  auto res = SoilGUI::render(globals.sm, {
+  auto res = render_gui(globals.sm, {
     fps, sim_dt, &globals.use_bw, &globals.full_screen_image, globals.cursor_x, globals.cursor_y});
   globals.sm.on_gui_update(res);
 }

@@ -2,7 +2,7 @@
 
 #include "slime_mold.hpp"
 
-struct SoilGUIUpdateResult;
+struct GUIUpdateResult;
 
 struct SlimeMoldComponent {
   friend class SoilGUI;
@@ -28,7 +28,7 @@ public:
 public:
   void reinitialize();
   float update();
-  void on_gui_update(const SoilGUIUpdateResult& res);
+  void on_gui_update(const GUIUpdateResult& res);
   int get_texture_dim() const;
   int get_current_num_particles() const;
   const uint8_t* read_rgbau8_image_data() const;

@@ -4,7 +4,7 @@
 
 class SlimeMoldComponent;
 
-struct SoilGUIUpdateResult {
+struct GUIUpdateResult {
   std::optional<bool> enabled;
   std::optional<bool> parameter_capture_enabled;
   std::optional<bool> lock_parameter_targets;
@@ -28,7 +28,7 @@ struct SoilGUIUpdateResult {
   bool close{};
 };
 
-struct SoilGUIParams {
+struct GUIParams {
   float app_fps;
   float sim_t;
   bool* use_bw;
@@ -37,7 +37,4 @@ struct SoilGUIParams {
   float cursor_y;
 };
 
-class SoilGUI {
-public:
-  static SoilGUIUpdateResult render(const SlimeMoldComponent& component, const SoilGUIParams& params);
-};
+GUIUpdateResult render_gui(const SlimeMoldComponent& component, const GUIParams& params);

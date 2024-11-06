@@ -14,7 +14,7 @@ add_executable(slime_mold
         slime_mold.cpp
         base_math.hpp
         base_math.cpp
-        SoilGUI.cpp
+        gui.cpp
         wgpu_imshow.cpp
         slime_mold_component.cpp
         #   imgui

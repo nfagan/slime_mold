@@ -1,9 +1,9 @@
-#include "SoilGUI.hpp"
+#include "gui.hpp"
 #include "slime_mold_component.hpp"
 #include "slime_mold.hpp"
 #include <imgui.h>
 
-SoilGUIUpdateResult SoilGUI::render(const SlimeMoldComponent& component, const SoilGUIParams& params) {
+GUIUpdateResult render_gui(const SlimeMoldComponent& component, const GUIParams& params) {
   float fps = params.app_fps;
   float sim_t = params.sim_t;
   bool* use_bw = params.use_bw;
@@ -16,7 +16,7 @@ SoilGUIUpdateResult SoilGUI::render(const SlimeMoldComponent& component, const S
     last_sim_t = sim_t;
   }
 
-  SoilGUIUpdateResult result;
+  GUIUpdateResult result;
 
   ImGui::Begin("GUI");
 
