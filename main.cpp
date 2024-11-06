@@ -35,10 +35,6 @@ struct {
   float cursor_y{};
 } globals;
 
-void main_init() {
-  globals.soil.initialize();
-}
-
 float main_update() {
   return globals.soil.update();
 }
@@ -149,12 +145,6 @@ int main(int, char**)
 #ifndef IMGUI_DISABLE_FILE_FUNCTIONS
   io.Fonts->AddFontFromFileTTF("fonts/DroidSans.ttf", 16.0f);
 #endif
-
-  /*
-   * init
-   */
-
-  main_init();
 
   emscripten_set_main_loop_arg(MainLoopStep, window, 0, false);
   return 0;

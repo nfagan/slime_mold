@@ -20,7 +20,6 @@ public:
   };
 
 public:
-  void initialize();
   void reinitialize();
   float update();
   void on_gui_update(const SoilGUIUpdateResult& res);

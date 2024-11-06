@@ -2,10 +2,6 @@
 #include "slime_mold.hpp"
 #include "SoilGUI.hpp"
 
-void SoilComponent::initialize() {
-  //
-}
-
 void SoilComponent::reinitialize() {
   params.need_reinitialize = true;
 }
