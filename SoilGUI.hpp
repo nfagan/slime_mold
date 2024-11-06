@@ -28,9 +28,16 @@ struct SoilGUIUpdateResult {
   bool close{};
 };
 
+struct SoilGUIParams {
+  float app_fps;
+  float sim_t;
+  bool* use_bw;
+  bool* full_screen;
+  float cursor_x;
+  float cursor_y;
+};
+
 class SoilGUI {
 public:
-  static SoilGUIUpdateResult render(
-    const SoilComponent& component, float app_fps, float sim_t,
-    bool* use_bw, bool* full_screen);
+  static SoilGUIUpdateResult render(const SoilComponent& component, const SoilGUIParams& params);
 };

@@ -3,9 +3,12 @@
 #include "slime_mold.hpp"
 #include <imgui.h>
 
-SoilGUIUpdateResult SoilGUI::render(
-  const SoilComponent& component, float fps, float sim_t, bool* use_bw, bool* full_screen) {
-  //
+SoilGUIUpdateResult SoilGUI::render(const SoilComponent& component, const SoilGUIParams& params) {
+  float fps = params.app_fps;
+  float sim_t = params.sim_t;
+  bool* use_bw = params.use_bw;
+  bool* full_screen = params.full_screen;
+
   static uint32_t update_index{};
   static float last_sim_t{};
 
@@ -16,6 +19,8 @@ SoilGUIUpdateResult SoilGUI::render(
   SoilGUIUpdateResult result;
 
   ImGui::Begin("GUI");
+
+  ImGui::Text("Cursor: %0.2f, %0.2f", params.cursor_x, params.cursor_y);
 
   bool enabled = component.params.enabled;
   if (ImGui::Checkbox("Enabled", &enabled)) {

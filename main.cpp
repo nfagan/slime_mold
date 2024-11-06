@@ -31,6 +31,8 @@ struct {
   SoilComponent soil;
   bool use_bw{true};
   bool full_screen_image{};
+  float cursor_x{};
+  float cursor_y{};
 } globals;
 
 void main_init() {
@@ -48,7 +50,8 @@ void main_gui_update(float sim_dt) {
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
-  auto res = SoilGUI::render(globals.soil, fps, sim_dt, &globals.use_bw, &globals.full_screen_image);
+  auto res = SoilGUI::render(globals.soil, {
+    fps, sim_dt, &globals.use_bw, &globals.full_screen_image, globals.cursor_x, globals.cursor_y});
   globals.soil.on_gui_update(res);
 }
 
@@ -83,6 +86,12 @@ void main_render() {
   wgpuQueueSubmit(queue, 1, &cmd_buffer);
 }
 
+int mouse_move_callback(int, const EmscriptenMouseEvent* e, void*) {
+  globals.cursor_x = float(e->clientX);
+  globals.cursor_y = float(e->clientY);
+  return 0;
+}
+
 } //  anon
 
 //  https://github.com/ocornut/imgui/issues/6640
@@ -103,6 +112,8 @@ static void get_window_dimensions(int* dw, int* dh) {
 
 int main(int, char**)
 {
+  emscripten_set_mousemove_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, 0, 1, mouse_move_callback);
+
   glfwSetErrorCallback(print_glfw_error);
   if (!glfwInit()) {
     return 1;
