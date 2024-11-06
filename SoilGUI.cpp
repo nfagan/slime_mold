@@ -77,6 +77,12 @@ SoilGUIUpdateResult SoilGUI::render(const SoilComponent& component, const SoilGU
     static constexpr int num_items = 7;
     const char* const num_particles_str[num_items]{"1000", "2000", "4000", "8000", "16000", "25000", "32000"};
     const int num_particles[num_items]{1000, 2000, 4000, 8000, 16000, 25000, 32000};
+    for (int i = 0; i < num_items; i++) {
+      if (num_particles[i] == component.get_current_num_particles()) {
+        item = i;
+        break;
+      }
+    }
     if (ImGui::ListBox("", &item, num_particles_str, num_items)) {
       result.new_num_particles = num_particles[item];
     }
@@ -89,6 +95,12 @@ SoilGUIUpdateResult SoilGUI::render(const SoilComponent& component, const SoilGU
     static constexpr int num_items = 3;
     const char* const items_str[num_items]{"256x256", "512x512", "1024x1024"};
     const int items[num_items]{256, 512, 1024};
+    for (int i = 0; i < num_items; i++) {
+      if (items[i] == component.get_texture_dim()) {
+        item = i;
+        break;
+      }
+    }
     if (ImGui::ListBox("", &item, items_str, num_items)) {
       result.new_texture_size = items[item];
     }
@@ -100,9 +112,9 @@ SoilGUIUpdateResult SoilGUI::render(const SoilComponent& component, const SoilGU
 
   if (ImGui::TreeNode("Time")) {
     static int item{};
-    static constexpr int num_items = 3;
-    const char* const items_str[num_items]{"Default", "Fast", "Faster"};
-    const float items[num_items]{1.0f, 4.0f, 8.0f};
+    static constexpr int num_items = 5;
+    const char* const items_str[num_items]{"Default", "Fast", "Faster", "Slow", "Slower"};
+    const float items[num_items]{1.0f, 4.0f, 8.0f, 0.5f, 0.01f};
     if (ImGui::ListBox("", &item, items_str, num_items)) {
       result.time_scale = items[item];
     }

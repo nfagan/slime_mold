@@ -30,6 +30,7 @@ public:
     return &soil;
   }
   int get_texture_dim() const;
+  int get_current_num_particles() const;
 
 private:
   Soil soil;

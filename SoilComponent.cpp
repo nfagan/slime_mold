@@ -10,6 +10,10 @@ int SoilComponent::get_texture_dim() const {
   return gen::SlimeMoldConfig::texture_dim;
 }
 
+int SoilComponent::get_current_num_particles() const {
+  return soil.read_config()->num_particles;
+}
+
 float SoilComponent::update() {
   if (params.initialized && params.need_reinitialize) {
 #if DYNAMIC_TEXTURE_SIZE

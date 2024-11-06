@@ -3,7 +3,6 @@
 #include "wgpu_imshow.hpp"
 
 #include "imgui.h"
-#include "imgui_impl_glfw.h"
 #include <stdio.h>
 #include <emscripten.h>
 #include <emscripten/html5.h>
