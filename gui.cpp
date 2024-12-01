@@ -189,36 +189,37 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
     result.average_image = avg_img;
   }
 
-  {
+  if (ImGui::TreeNode("DirectionInfluence")) {
+    if (ImGui::Button("LoadImage")) {
+      //    result.direction_influencing_image_path = "/Users/nick/Downloads/edge_im.png";
+      result.direction_influencing_image_path = "/Users/nick/Downloads/00003652_0002_15 copy.jpeg";
+      //    result.direction_influencing_image_path = "/Users/nick/Downloads/00003653_0014_2.jpeg";
+    }
+    {
+      char text[2048];
+      const auto f = ImGuiInputTextFlags_EnterReturnsTrue;
+      if (ImGui::InputText("ImageFilePath", text, 2048, f)) {
+        result.direction_influencing_image_path = text;
+      }
+    }
+
     float s = soil_config.direction_influencing_image_scale;
-    if (ImGui::SliderFloat("DirectionInfluencingImageScale", &s, 0.0f, 1.0f)) {
+    if (ImGui::SliderFloat("InfluenceScale", &s, 0.0f, 1.0f)) {
       result.direction_influencing_image_scale = s;
     }
-  }
-
-  if (ImGui::Button("LoadImage")) {
-//    result.direction_influencing_image_path = "/Users/nick/Downloads/edge_im.png";
-    result.direction_influencing_image_path = "/Users/nick/Downloads/00003652_0002_15 copy.jpeg";
-//    result.direction_influencing_image_path = "/Users/nick/Downloads/00003653_0014_2.jpeg";
-  }
-  {
-    char text[2048];
-    const auto f = ImGuiInputTextFlags_EnterReturnsTrue;
-    if (ImGui::InputText("DirectionInfluencingImage", text, 2048, f)) {
-      result.direction_influencing_image_path = text;
+    {
+      int edge_thresh = component.params.edge_detection_threshold;
+      if (ImGui::InputInt("EdgeThreshold", &edge_thresh)) {
+        component.params.edge_detection_threshold = edge_thresh;
+      }
     }
-  }
-  {
-    int edge_thresh = component.params.edge_detection_threshold;
-    if (ImGui::InputInt("EdgeThreshold", &edge_thresh)) {
-      component.params.edge_detection_threshold = edge_thresh;
-    }
+    ImGui::SliderFloat("RenderMix", params.dir_image_mix, 0.0f, 1.0f);
+    ImGui::TreePop();
   }
 
   if (ImGui::TreeNode("Render")) {
     ImGui::Checkbox("RenderB&W", use_bw);
     ImGui::Checkbox("RenderFullScreen", full_screen);
-    ImGui::SliderFloat("DirImageMix", params.dir_image_mix, 0.0f, 1.0f);
     ImGui::TreePop();
   }
 
