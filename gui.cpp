@@ -3,7 +3,7 @@
 #include "slime_mold.hpp"
 #include <imgui.h>
 
-GUIUpdateResult render_gui(const SlimeMoldComponent& component, const GUIParams& params) {
+GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& params) {
   float fps = params.app_fps;
   float sim_t = params.sim_t;
   bool* use_bw = params.use_bw;
@@ -198,13 +198,20 @@ GUIUpdateResult render_gui(const SlimeMoldComponent& component, const GUIParams&
 
   if (ImGui::Button("LoadImage")) {
 //    result.direction_influencing_image_path = "/Users/nick/Downloads/edge_im.png";
-    result.direction_influencing_image_path = "/Users/nick/Downloads/00003652_0002_15 copy.jpeg";
+//    result.direction_influencing_image_path = "/Users/nick/Downloads/00003652_0002_15 copy.jpeg";
+    result.direction_influencing_image_path = "/Users/nick/Downloads/00003653_0014_2.jpeg";
   }
   {
     char text[2048];
     const auto f = ImGuiInputTextFlags_EnterReturnsTrue;
     if (ImGui::InputText("DirectionInfluencingImage", text, 2048, f)) {
       result.direction_influencing_image_path = text;
+    }
+  }
+  {
+    int edge_thresh = component.params.edge_detection_threshold;
+    if (ImGui::InputInt("EdgeThreshold", &edge_thresh)) {
+      component.params.edge_detection_threshold = edge_thresh;
     }
   }
 

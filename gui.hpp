@@ -40,4 +40,4 @@ struct GUIParams {
   float cursor_y;
 };
 
-GUIUpdateResult render_gui(const SlimeMoldComponent& component, const GUIParams& params);
+GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& params);
