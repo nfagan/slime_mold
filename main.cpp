@@ -13,8 +13,7 @@ namespace gfx = wgpu;
 namespace gfx = ogl;
 #endif
 
-#include "imgui.h"
-#include <stdio.h>
+#include <imgui.h>
 
 #ifdef SM_IS_WGPU
 #include <emscripten.h>
@@ -26,7 +25,6 @@ namespace gfx = ogl;
 //  ------------------------------------------------------------------------------------
 
 static void main_loop(void* window);
-static void print_glfw_error(int error, const char* description);
 
 namespace {
 
@@ -96,7 +94,13 @@ int main(int, char**) {
 
 #if SM_IS_EMSCRIPTEN
   emscripten_set_main_loop_arg(main_loop, window, 0, false);
+#else
+  while (!glfwWindowShouldClose((GLFWwindow*) window)) {
+    main_loop(window);
+  }
 #endif
+  ogl::terminate();
+
   return 0;
 }
 
@@ -108,6 +112,7 @@ void main_begin_frame(GLFWwindow* window) {
   int window_height;
   glfwGetWindowSize(window, &window_width, &window_height);
 
+#if SM_IS_EMSCRIPTEN
   int browser_w;
   int browser_h;
   get_window_dimensions(&browser_w, &browser_h);
@@ -115,6 +120,7 @@ void main_begin_frame(GLFWwindow* window) {
   if (browser_w != width || browser_h != height) {
     glfwSetWindowSize((GLFWwindow*) window, browser_w, browser_h);
   }
+#endif
 
   const uint8_t* tex_data = globals.sm.read_rgbau8_image_data();
   gfx::begin_frame({
@@ -132,8 +138,4 @@ static void main_loop(void* window) {
   main_begin_frame((GLFWwindow*) window);
   main_gui_update(sim_dt);
   main_render();
-}
-
-static void print_glfw_error(int error, const char* description) {
-  printf("GLFW Error %d: %s\n", error, description);
 }

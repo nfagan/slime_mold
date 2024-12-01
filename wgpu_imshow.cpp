@@ -436,6 +436,10 @@ void* wgpu::boot() {
   return window;
 }
 
+void wgpu::terminate() {
+  //
+}
+
 void wgpu::gui_new_frame() {
   ImGui_ImplWGPU_NewFrame();
   ImGui_ImplGlfw_NewFrame();

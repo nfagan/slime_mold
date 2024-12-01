@@ -22,11 +22,10 @@ set(COMMON_SOURCES
         deps/imgui/imgui_tables.cpp
         deps/imgui/imgui_widgets.cpp
         deps/imgui/backends/imgui_impl_glfw.cpp
-        deps/imgui/backends/imgui_impl_wgpu.cpp
 )
 
 #   webgpu
-add_executable(slime_mold ${COMMON_SOURCES} wgpu_imshow.cpp)
+add_executable(slime_mold ${COMMON_SOURCES} wgpu_imshow.cpp deps/imgui/backends/imgui_impl_wgpu.cpp)
 target_include_directories(slime_mold PRIVATE
         deps/imgui
         deps/imgui/backends
@@ -35,14 +34,13 @@ target_include_directories(slime_mold PRIVATE
 set_target_properties(slime_mold PROPERTIES LINK_FLAGS "-s USE_GLFW=3 -s USE_WEBGPU=1 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s NO_EXIT_RUNTIME=0 -s ASSERTIONS=1 --no-heap-copy --preload-file ${CMAKE_SOURCE_DIR}/deps/imgui/misc/fonts@/fonts")
 target_compile_definitions(slime_mold PRIVATE SM_IS_WGPU)
 
-#   glfw
-#add_subdirectory(deps/glfw-3.4)
-
 #   opengl
-add_executable(slime_mold_local ${COMMON_SOURCES} opengl_imshow.cpp)
+add_subdirectory(deps/glfw-3.4)
+add_executable(slime_mold_local ${COMMON_SOURCES} opengl_imshow.cpp deps/imgui/backends/imgui_impl_opengl3.cpp deps/glad/src/glad.c)
 target_include_directories(slime_mold_local PRIVATE
         deps/imgui
         deps/imgui/backends
+        deps/glad/include
 )
 target_compile_definitions(slime_mold_local PRIVATE SM_IS_OPENGL)
 target_link_libraries(slime_mold_local PUBLIC glfw)

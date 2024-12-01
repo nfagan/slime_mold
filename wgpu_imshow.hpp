@@ -11,6 +11,7 @@ struct Context {
 };
 
 void* boot();
+void terminate();
 void gui_new_frame();
 void begin_frame(const Context& context, const void* image_data);
 void render();
