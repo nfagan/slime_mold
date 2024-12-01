@@ -363,10 +363,26 @@ void resize_surface(int w, int h) {
     globals.wgpu_device, globals.wgpu_surface, &swap_chain_desc);
 }
 
+void gui_init(void* window_ptr) {
+  const auto window = (GLFWwindow*) window_ptr;
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+  io.IniFilename = nullptr;
+  ImGui::StyleColorsDark();
+  // Setup Platform/Renderer backends
+  ImGui_ImplGlfw_InitForOther(window, true);
+  ImGui_ImplWGPU_Init(
+    globals.wgpu_device, 3,
+    globals.wgpu_preferred_surface_fmt, WGPUTextureFormat_Undefined);
+#ifndef IMGUI_DISABLE_FILE_FUNCTIONS
+  io.Fonts->AddFontFromFileTTF("fonts/DroidSans.ttf", 16.0f);
+#endif
+}
 
-} //  anon
-
-bool wgpu::init() {
+bool init() {
   globals.wgpu_device = emscripten_webgpu_get_device();
   if (!globals.wgpu_device) {
     return false;
@@ -393,23 +409,31 @@ bool wgpu::init() {
   return true;
 }
 
-void wgpu::gui_init(void* window_ptr) {
-  const auto window = (GLFWwindow*) window_ptr;
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO(); (void)io;
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-  io.IniFilename = nullptr;
-  ImGui::StyleColorsDark();
-  // Setup Platform/Renderer backends
-  ImGui_ImplGlfw_InitForOther(window, true);
-  ImGui_ImplWGPU_Init(
-    globals.wgpu_device, 3,
-    globals.wgpu_preferred_surface_fmt, WGPUTextureFormat_Undefined);
-#ifndef IMGUI_DISABLE_FILE_FUNCTIONS
-  io.Fonts->AddFontFromFileTTF("fonts/DroidSans.ttf", 16.0f);
-#endif
+} //  anon
+
+void* wgpu::boot() {
+  if (!glfwInit()) {
+    return nullptr;
+  }
+
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  GLFWwindow* window = glfwCreateWindow(1280, 720, "SlimeMold", nullptr, nullptr);
+  if (!window) {
+    glfwTerminate();
+    return nullptr;
+  }
+
+  // Initialize the WebGPU environment
+  if (!init()) {
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    return nullptr;
+  }
+
+  glfwShowWindow(window);
+
+  gui_init(window);
+  return window;
 }
 
 void wgpu::gui_new_frame() {

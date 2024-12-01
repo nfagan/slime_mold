@@ -10,8 +10,7 @@ struct Context {
   int texture_dim;
 };
 
-bool init();
-void gui_init(void* window);
+void* boot();
 void gui_new_frame();
 void begin_frame(const Context& context, const void* image_data);
 void render();
