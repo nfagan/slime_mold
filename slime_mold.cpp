@@ -273,7 +273,10 @@ Vec2f wrap01(Vec2f v) {
   return v;
 }
 
-void update_particle(const Config& config, SlimeParticle& part, const float* im) {
+void update_particle(
+  const Config& config, SlimeParticle& part, const float* im,
+  const DirectionInfluencingImage& dir_im) {
+  //
   auto head = to_vec(part.heading);
   auto left = to_vec(part.left_sensor);
   auto right = to_vec(part.right_sensor);
@@ -298,6 +301,19 @@ void update_particle(const Config& config, SlimeParticle& part, const float* im)
     float sgn = i == 1 ? left_sgn : -1.0f;
     new_head += sgn * part.turn_speed * dt;
   }
+
+#if 1
+  if (dir_im.theta) {
+    float px = clamp(part.position.x, 0.0f, 1.0f);
+    float py = clamp(part.position.y, 0.0f, 1.0f);
+    int di = std::max(0, std::min(int(float(dir_im.h) * py), dir_im.h-1));
+    int dj = std::max(0, std::min(int(float(dir_im.w) * px), dir_im.w-1));
+    const float dir_im_dir = dir_im.theta[ij_to_linear(di, dj, dir_im.w, 1)];
+    new_head = lerp(config.direction_influencing_image_scale, new_head, dir_im_dir);
+  }
+#else
+  (void) dir_im;
+#endif
 
   auto speed_sens = 1.0f - std::exp(-len * part.sensor_speed_sensitivity);
   auto speed = part.speed + part.sensor_speed_sensitivity_scale * speed_sens;
@@ -476,9 +492,9 @@ std::unique_ptr<SlimeParticle[]> gen::make_slime_mold_particles(const SlimeMoldC
   return result;
 }
 
-float gen::update_slime_mold_particles(SlimeParticle* particles,
-                                       const SlimeMoldConfig& config,
-                                       SlimeMoldSimulationContext* context) {
+float gen::update_slime_mold_particles(
+  SlimeParticle* particles, const SlimeMoldConfig& config, SlimeMoldSimulationContext* context) {
+  //
   auto t0 = std::chrono::high_resolution_clock::now();
 
   auto* data0 = context->texture_data0;
@@ -486,7 +502,7 @@ float gen::update_slime_mold_particles(SlimeParticle* particles,
   auto* tmp = context->texture_data2;
 
   for (int i = 0; i < config.num_particles; i++) {
-    update_particle(config, particles[i], data0);
+    update_particle(config, particles[i], data0, *context->direction_influencing_image);
   }
 
   for (int i = 0; i < config.num_particles; i++) {

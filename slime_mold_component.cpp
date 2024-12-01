@@ -1,13 +1,15 @@
 #include "slime_mold_component.hpp"
 #include "slime_mold.hpp"
 #include "gui.hpp"
+#include "image_manip.hpp"
 
 namespace {
 
 void set_sim_context_ptrs(
   gen::SlimeMoldSimulationContext& context,
   gen::DefaultSlimeMoldSimulationTextureData& tex_data,
-  const gen::SlimeMoldParams* params) {
+  const gen::SlimeMoldParams* params,
+  const gen::DirectionInfluencingImage* dir_im) {
   //
   context.texture_data0 = tex_data.texture_data0.get();
   context.texture_data1 = tex_data.texture_data1.get();
@@ -16,13 +18,16 @@ void set_sim_context_ptrs(
   context.perturb_data = tex_data.perturb_data.get();
   context.rgbau8_texture_data0 = tex_data.rgbau8_texture_data.get();
   context.params = params;
+  context.direction_influencing_image = dir_im;
 }
 
 void init_sim(SlimeMoldComponent& component) {
   auto* impl = &component.sim;
   impl->texture_data = gen::make_default_slime_mold_texture_data();
   impl->particles = gen::make_slime_mold_particles(impl->config);
-  set_sim_context_ptrs(impl->sim_context, impl->texture_data, &impl->params);
+  set_sim_context_ptrs(
+    impl->sim_context, impl->texture_data,
+    &impl->params, &impl->direction_influencing_image);
   impl->initialized = true;
 }
 
@@ -54,6 +59,66 @@ void set_particle_use_only_right_turns(SlimeMoldComponent& comp, bool v) {
   if (comp.sim.initialized) {
     gen::set_particle_right_only(comp.sim.particles.get(), comp.sim.config, v);
   }
+}
+
+void try_update_direction_influencing_image(SlimeMoldComponent& comp, const std::string& im_p) {
+  std::unique_ptr<uint8_t[]> im_data_src;
+  int sw;
+  int sh;
+  int sc;
+  if (!im::read_image(im_p.c_str(), true, im_data_src, &sw, &sh, &sc)) {
+    return;
+  }
+
+  const int rd = 512;
+  auto im_data_resize = std::make_unique<uint8_t[]>(rd * rd * sc);
+  im::resize_image(im_data_src.get(), sw, sh, sc, im_data_resize.get(), rd, rd);
+
+  auto im_gray = std::make_unique<uint8_t[]>(rd * rd);
+  const int nc = std::min(sc, 3);
+  for (int i = 0; i < rd; i++) {
+    for (int j = 0; j < rd; j++) {
+      int s{};
+      for (int ci = 0; ci < nc; ci++) {
+        const int ii = (i * rd + j) * sc + ci; //  note, use sc here in case it is > 3
+        s += im_data_resize[ii];
+      }
+      float mu = float(s) / float(nc);
+      uint8_t r = uint8_t(std::min(std::max(int(mu), 0), 255));
+      im_gray[i * rd + j] = r;
+    }
+  }
+
+#if 1
+  auto im_edge = std::make_unique<uint8_t[]>(rd * rd);
+  im::edge_detect(im_gray.get(), rd, rd, im_edge.get(), comp.params.edge_detection_threshold);
+  auto& im_read = im_edge;
+#else
+  auto& im_read = im_gray;
+#endif
+
+  auto dir_im_f = std::make_unique<float[]>(rd * rd);
+  im::compute_directions_to_edges(im_read.get(), rd, rd, dir_im_f.get());
+
+#if 0
+  {
+    auto show_res = std::make_unique<uint8_t[]>(rd * rd);
+    std::fill(show_res.get(), show_res.get() + rd * rd, 0);
+    const float minv = *std::min_element(dir_im_f.get(), dir_im_f.get() + rd * rd);
+    const float maxv = *std::max_element(dir_im_f.get(), dir_im_f.get() + rd * rd);
+    const float d = minv == maxv ? 1.0f : maxv - minv;
+    for (int i = 0; i < rd * rd; i++) {
+      show_res[i] = uint8_t(255.0f * (dir_im_f[i] - minv) / d);
+    }
+    im::write_image("/Users/nick/Downloads/edge_im2.png", show_res.get(), rd, rd, 1);
+    im::write_image("/Users/nick/Downloads/edge_im3.png", im_read.get(), rd, rd, 1);
+  }
+#endif
+
+  auto& dir_im = comp.sim.direction_influencing_image;
+  dir_im.theta = std::move(dir_im_f);
+  dir_im.w = rd;
+  dir_im.h = rd;
 }
 
 } //  anon
@@ -150,5 +215,11 @@ void SlimeMoldComponent::on_gui_update(const GUIUpdateResult& res) {
   }
   if (res.reinitialize) {
     params.need_reinitialize = true;
+  }
+  if (res.direction_influencing_image_path) {
+    try_update_direction_influencing_image(*this, res.direction_influencing_image_path.value());
+  }
+  if (res.direction_influencing_image_scale) {
+    config->direction_influencing_image_scale = res.direction_influencing_image_scale.value();
   }
 }

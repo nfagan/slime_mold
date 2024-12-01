@@ -35,7 +35,7 @@ bool init_context() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_SAMPLES, 4);
-  GLFWwindow* window = glfwCreateWindow(1280, 720, "", nullptr, nullptr);
+  GLFWwindow* window = glfwCreateWindow(1024, 1024, "", nullptr, nullptr);
   if (!window) {
     return false;
   } else {

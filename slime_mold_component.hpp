@@ -14,6 +14,7 @@ public:
     bool need_reinitialize{};
     int desired_num_particles{};
     int desired_texture_size{};
+    int edge_detection_threshold{13};
   };
 
   struct Sim {
@@ -22,6 +23,7 @@ public:
     gen::SlimeMoldSimulationContext sim_context{};
     gen::DefaultSlimeMoldSimulationTextureData texture_data;
     std::unique_ptr<gen::SlimeParticle[]> particles;
+    gen::DirectionInfluencingImage direction_influencing_image{};
     bool initialized{};
   };
 

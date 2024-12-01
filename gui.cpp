@@ -189,6 +189,25 @@ GUIUpdateResult render_gui(const SlimeMoldComponent& component, const GUIParams&
     result.average_image = avg_img;
   }
 
+  {
+    float s = soil_config.direction_influencing_image_scale;
+    if (ImGui::SliderFloat("DirectionInfluencingImageScale", &s, 0.0f, 1.0f)) {
+      result.direction_influencing_image_scale = s;
+    }
+  }
+
+  if (ImGui::Button("LoadImage")) {
+//    result.direction_influencing_image_path = "/Users/nick/Downloads/edge_im.png";
+    result.direction_influencing_image_path = "/Users/nick/Downloads/00003652_0002_15 copy.jpeg";
+  }
+  {
+    char text[2048];
+    const auto f = ImGuiInputTextFlags_EnterReturnsTrue;
+    if (ImGui::InputText("DirectionInfluencingImage", text, 2048, f)) {
+      result.direction_influencing_image_path = text;
+    }
+  }
+
   if (ImGui::TreeNode("Render")) {
     ImGui::Checkbox("RenderB&W", use_bw);
     ImGui::Checkbox("RenderFullScreen", full_screen);

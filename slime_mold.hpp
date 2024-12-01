@@ -56,6 +56,7 @@ struct SlimeMoldConfig {
   int scale_speed_power{0};
   int turn_speed_power{0};
   bool only_right_turns{true};
+  float direction_influencing_image_scale{0.0f};  //  [0, 1]
 };
 
 struct SlimeMoldParams {
@@ -81,6 +82,12 @@ struct SlimeParticle {
   bool right_only;
 };
 
+struct DirectionInfluencingImage {
+  std::unique_ptr<float[]> theta;
+  int w;
+  int h;
+};
+
 struct SlimeMoldSimulationContext {
   float* texture_data0;
   uint8_t* rgbau8_texture_data0;
@@ -93,6 +100,7 @@ struct SlimeMoldSimulationContext {
   int perturb_iters;
   uint64_t tot_iter;
   const SlimeMoldParams* params;
+  const DirectionInfluencingImage* direction_influencing_image;
 };
 
 struct DefaultSlimeMoldSimulationTextureData {

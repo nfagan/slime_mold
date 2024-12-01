@@ -1,4 +1,5 @@
-im = imread( "/Volumes/external3/00003652_0002_15 copy.jpeg" );
+im_p = "/Users/nick/Downloads/00003652_0002_15 copy.jpeg";
+im = imread( im_p );
 
 %%
 
@@ -12,6 +13,19 @@ subplot( 1, 3, 2 );
 imagesc( gy ); colorbar;
 subplot( 1, 3, 3 );
 imshow( im_bw );
+
+t = 0.05;
+[gx, gy] = gradient( im_bw );
+is_edge = abs(gx) > t | abs(gy) > t;
+
+figure(2); clf;
+bin_is_edge = uint8( 255 * is_edge );
+imshow( bin_is_edge );
+
+if ( 1 )
+  dst_p = fullfile( fileparts(im_p), "edge_im.png" );
+  imwrite( bin_is_edge, dst_p );
+end
 
 %%
 
@@ -48,6 +62,7 @@ end
 %%
 
 manip = @to_angle;
+di = manip( vec_im );
 
 figure(3); clf;
 subplot( 1, 2, 1 );

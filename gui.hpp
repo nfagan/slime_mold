@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 
 class SlimeMoldComponent;
 
@@ -25,6 +26,8 @@ struct GUIUpdateResult {
   std::optional<bool> reset_diffuse_parameters;
   std::optional<int> new_num_particles;
   std::optional<int> new_texture_size;
+  std::optional<std::string> direction_influencing_image_path;
+  std::optional<float> direction_influencing_image_scale;
   bool close{};
 };
 
