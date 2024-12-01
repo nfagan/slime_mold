@@ -34,6 +34,7 @@ struct {
   bool full_screen_image{};
   float cursor_x{};
   float cursor_y{};
+  float dir_image_mix{};
 } globals;
 
 float main_update() {
@@ -46,7 +47,8 @@ void main_gui_update(float sim_dt) {
   gfx::gui_new_frame();
 
   auto res = render_gui(globals.sm, {
-    fps, sim_dt, &globals.use_bw, &globals.full_screen_image, globals.cursor_x, globals.cursor_y});
+    fps, sim_dt, &globals.use_bw, &globals.full_screen_image,
+    &globals.dir_image_mix, globals.cursor_x, globals.cursor_y});
   globals.sm.on_gui_update(res);
 }
 
@@ -123,13 +125,17 @@ void main_begin_frame(GLFWwindow* window) {
 #endif
 
   const uint8_t* tex_data = globals.sm.read_rgbau8_image_data();
+  int dir_im_dim{};
+  const uint8_t* dir_im_data = globals.sm.read_r_dir_image_data(&dir_im_dim);
+
   gfx::begin_frame({
     width,
     height,
     globals.use_bw,
     globals.full_screen_image,
-    globals.sm.get_texture_dim()
-  }, tex_data);
+    globals.sm.get_texture_dim(),
+    globals.dir_image_mix
+  }, tex_data, dir_im_data, dir_im_dim);
 }
 
 static void main_loop(void* window) {

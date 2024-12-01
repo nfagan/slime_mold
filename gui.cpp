@@ -198,8 +198,8 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
 
   if (ImGui::Button("LoadImage")) {
 //    result.direction_influencing_image_path = "/Users/nick/Downloads/edge_im.png";
-//    result.direction_influencing_image_path = "/Users/nick/Downloads/00003652_0002_15 copy.jpeg";
-    result.direction_influencing_image_path = "/Users/nick/Downloads/00003653_0014_2.jpeg";
+    result.direction_influencing_image_path = "/Users/nick/Downloads/00003652_0002_15 copy.jpeg";
+//    result.direction_influencing_image_path = "/Users/nick/Downloads/00003653_0014_2.jpeg";
   }
   {
     char text[2048];
@@ -218,6 +218,7 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
   if (ImGui::TreeNode("Render")) {
     ImGui::Checkbox("RenderB&W", use_bw);
     ImGui::Checkbox("RenderFullScreen", full_screen);
+    ImGui::SliderFloat("DirImageMix", params.dir_image_mix, 0.0f, 1.0f);
     ImGui::TreePop();
   }
 

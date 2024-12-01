@@ -19,9 +19,16 @@ struct {
   GLuint texture{};
   GLuint program{};
   GLuint vao{};
-  int image_uniform_location{};
+  GLuint dummy_texture{};
+  bool use_dir_image{};
+  int main_image_uniform_location{};
+  int dir_image_uniform_location{};
+  int dir_image_mix_uniform_location{};
   int bw_uniform_location{};
+  int dir_texture_dim{};
+  GLuint dir_texture{};
   bool render_bw{};
+  float dir_image_mix{};
 } globals;
 
 bool init_context() {
@@ -60,7 +67,7 @@ bool init_imgui(GLFWwindow* window) {
   return true;
 }
 
-bool create_texture(int dim) {
+bool create_main_texture(int dim) {
   if (globals.texture) {
     glDeleteTextures(1, &globals.texture);
     globals.texture = 0;
@@ -75,6 +82,42 @@ bool create_texture(int dim) {
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dim, dim, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
   glBindTexture(GL_TEXTURE_2D, 0);
   globals.texture_dim = dim;
+  return true;
+}
+
+bool create_dir_texture(int dim) {
+  if (globals.dir_texture) {
+    glDeleteTextures(1, &globals.dir_texture);
+    globals.dir_texture = 0;
+  }
+
+  glGenTextures(1, &globals.dir_texture);
+  glBindTexture(GL_TEXTURE_2D, globals.dir_texture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, dim, dim, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  globals.dir_texture_dim = dim;
+  return true;
+}
+
+bool create_dummy_texture() {
+  if (globals.dummy_texture) {
+    glDeleteTextures(1, &globals.dummy_texture);
+    globals.dummy_texture = 0;
+  }
+
+  const int dim = 1;
+  glGenTextures(1, &globals.dummy_texture);
+  glBindTexture(GL_TEXTURE_2D, globals.dummy_texture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, dim, dim, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+  glBindTexture(GL_TEXTURE_2D, 0);
   return true;
 }
 
@@ -146,13 +189,16 @@ bool init_program() {
     "in vec2 uv;\n"
     "out vec4 frag_color;\n"
     "uniform sampler2D image;\n"
+    "uniform sampler2D dir_image;\n"
     "uniform int bw;\n"
+    "uniform float dir_image_mix;\n"
     "void main() {\n"
     " vec3 col = texture(image, uv).rgb;\n"
+    " float dir_color = texture(dir_image, uv).r;\n"
     " if (bw == 1) {\n"
     "   col = vec3((col.r + col.g + col.b) / 3);\n"
     " }\n"
-    " frag_color = vec4(col, 1.0);\n"
+    " frag_color = vec4(mix(col, vec3(dir_color), dir_image_mix), 1.0);\n"
     "}";
 
   if (!create_program(vertex_shader_text, fragment_shader_text, &globals.program)) {
@@ -164,7 +210,23 @@ bool init_program() {
     if (loc == -1) {
       return false;
     } else {
-      globals.image_uniform_location = loc;
+      globals.main_image_uniform_location = loc;
+    }
+  }
+  {
+    int loc = glGetUniformLocation(globals.program, "dir_image");
+    if (loc == -1) {
+      return false;
+    } else {
+      globals.dir_image_uniform_location = loc;
+    }
+  }
+  {
+    int loc = glGetUniformLocation(globals.program, "dir_image_mix");
+    if (loc == -1) {
+      return false;
+    } else {
+      globals.dir_image_mix_uniform_location = loc;
     }
   }
   {
@@ -253,8 +315,12 @@ void ogl::gui_new_frame() {
   ImGui::NewFrame();
 }
 
-void ogl::begin_frame(const Context& context, const void* image_data) {
+void ogl::begin_frame(
+  const Context& context, const void* image_data, const uint8_t* dir_im, int dir_im_dim) {
+  //
   globals.prepared = false;
+  globals.use_dir_image = false;
+  globals.dir_image_mix = context.dir_image_mix;
 
   if (!globals.init) {
     return;
@@ -265,14 +331,35 @@ void ogl::begin_frame(const Context& context, const void* image_data) {
   globals.render_bw = context.enable_bw;
 
   if (context.texture_dim != globals.texture_dim) {
-    if (!create_texture(context.texture_dim)) {
+    if (!create_main_texture(context.texture_dim)) {
       return;
     }
   }
 
-  const int dim = context.texture_dim;
-  glBindTexture(GL_TEXTURE_2D, globals.texture);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, dim, dim, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+  if (dir_im_dim != globals.dir_texture_dim) {
+    if (!create_dir_texture(dir_im_dim)) {
+      return;
+    }
+  }
+
+  if (!globals.dummy_texture) {
+    if (!create_dummy_texture()) {
+      return;
+    }
+  }
+
+  {
+    const int dim = context.texture_dim;
+    glBindTexture(GL_TEXTURE_2D, globals.texture);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, dim, dim, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+  }
+
+  if (dir_im) {
+    const int dim = dir_im_dim;
+    glBindTexture(GL_TEXTURE_2D, globals.dir_texture);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, dim, dim, GL_RED, GL_UNSIGNED_BYTE, dir_im);
+    globals.use_dir_image = true;
+  }
 
   globals.prepared = true;
 }
@@ -288,8 +375,16 @@ void ogl::render() {
   glUseProgram(globals.program);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, globals.texture);
-  glUniform1i(globals.image_uniform_location, 0);
+  glActiveTexture(GL_TEXTURE1);
+  if (globals.use_dir_image) {
+    glBindTexture(GL_TEXTURE_2D, globals.dir_texture);
+  } else {
+    glBindTexture(GL_TEXTURE_2D, globals.dummy_texture);
+  }
+  glUniform1i(globals.main_image_uniform_location, 0);
+  glUniform1i(globals.dir_image_uniform_location, 1);
   glUniform1i(globals.bw_uniform_location, int(globals.render_bw));
+  glUniform1f(globals.dir_image_mix_uniform_location, globals.dir_image_mix);
   glBindVertexArray(globals.vao);
   glDrawArrays(GL_TRIANGLES, 0, 6);
 

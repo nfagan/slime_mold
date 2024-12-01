@@ -36,6 +36,7 @@ struct GUIParams {
   float sim_t;
   bool* use_bw;
   bool* full_screen;
+  float* dir_image_mix;
   float cursor_x;
   float cursor_y;
 };

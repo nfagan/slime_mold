@@ -119,6 +119,7 @@ void try_update_direction_influencing_image(SlimeMoldComponent& comp, const std:
   dir_im.theta = std::move(dir_im_f);
   dir_im.w = rd;
   dir_im.h = rd;
+  comp.sim.direction_influencing_src_image = std::move(im_gray);
 }
 
 } //  anon
@@ -133,6 +134,11 @@ int SlimeMoldComponent::get_texture_dim() const {
 
 int SlimeMoldComponent::get_current_num_particles() const {
   return sim.config.num_particles;
+}
+
+const uint8_t* SlimeMoldComponent::read_r_dir_image_data(int* dim) const {
+  *dim = sim.direction_influencing_image.w;
+  return sim.direction_influencing_src_image.get();
 }
 
 const uint8_t* SlimeMoldComponent::read_rgbau8_image_data() const {
