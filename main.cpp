@@ -1,16 +1,13 @@
 #include "slime_mold_component.hpp"
 #include "gui.hpp"
+#include "imshow.hpp"
 
 #ifdef SM_IS_WGPU
 #define SM_IS_EMSCRIPTEN (1)
-#include "wgpu_imshow.hpp"
-namespace gfx = wgpu;
 #endif
 
 #ifdef SM_IS_OPENGL
 #define SM_IS_EMSCRIPTEN (0)
-#include "opengl_imshow.hpp"
-namespace gfx = ogl;
 #endif
 
 #include <imgui.h>
@@ -101,7 +98,7 @@ int main(int, char**) {
     main_loop(window);
   }
 #endif
-  ogl::terminate();
+  gfx::terminate();
 
   return 0;
 }

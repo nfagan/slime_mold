@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace ogl {
+namespace gfx {
 
 struct Context {
   int surface_width;

@@ -1,4 +1,4 @@
-#include "wgpu_imshow.hpp"
+#include "imshow.hpp"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_wgpu.h"
 #include <glfw/glfw3.h>
@@ -307,7 +307,7 @@ bool create_pipeline(WGPUDevice device, WGPUTextureFormat surface_format) {
   return true;
 }
 
-bool try_initialize(WGPUDevice wgpu_device, const wgpu::Context& context) {
+bool try_initialize(WGPUDevice wgpu_device, const gfx::Context& context) {
   if (!create_pipeline(wgpu_device, globals.wgpu_preferred_surface_fmt)) {
     return false;
   }
@@ -411,7 +411,7 @@ bool init() {
 
 } //  anon
 
-void* wgpu::boot() {
+void* gfx::boot() {
   if (!glfwInit()) {
     return nullptr;
   }
@@ -436,17 +436,19 @@ void* wgpu::boot() {
   return window;
 }
 
-void wgpu::terminate() {
+void gfx::terminate() {
   //
 }
 
-void wgpu::gui_new_frame() {
+void gfx::gui_new_frame() {
   ImGui_ImplWGPU_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 }
 
-void wgpu::begin_frame(const Context& context, const void* image_data) {
+void gfx::begin_frame(
+  const Context& context, const void* image_data, const uint8_t* dir_image, int dir_im_dim) {
+  //
   globals.prepared = false;
 
   if (!globals.wgpu_device) {
@@ -519,7 +521,7 @@ void wgpu::begin_frame(const Context& context, const void* image_data) {
   globals.prepared = true;
 }
 
-void wgpu::render() {
+void gfx::render() {
   ImGui::Render();
 
   const float cc[4] = {0.45f, 0.55f, 0.60f, 1.00f};

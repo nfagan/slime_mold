@@ -31,15 +31,17 @@ set(COMMON_INCLUDES
         deps/stb
 )
 
-#   webgpu
+#   webgpu / public
 add_executable(slime_mold ${COMMON_SOURCES} wgpu_imshow.cpp deps/imgui/backends/imgui_impl_wgpu.cpp)
 target_include_directories(slime_mold PRIVATE ${COMMON_INCLUDES})
 
 set_target_properties(slime_mold PROPERTIES LINK_FLAGS "-s USE_GLFW=3 -s USE_WEBGPU=1 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s NO_EXIT_RUNTIME=0 -s ASSERTIONS=1 --no-heap-copy --preload-file ${CMAKE_SOURCE_DIR}/deps/imgui/misc/fonts@/fonts")
 target_compile_definitions(slime_mold PRIVATE SM_IS_WGPU)
 
-#   opengl
-add_subdirectory(deps/glfw-3.4)
+#   opengl / local
+if (NOT EMSCRIPTEN)
+    add_subdirectory(deps/glfw-3.4)
+endif()
 add_executable(slime_mold_local ${COMMON_SOURCES} opengl_imshow.cpp deps/imgui/backends/imgui_impl_opengl3.cpp deps/glad/src/glad.c)
 target_include_directories(slime_mold_local PRIVATE ${COMMON_INCLUDES} deps/glad/include deps/stb)
 target_compile_definitions(slime_mold_local PRIVATE SM_IS_OPENGL)

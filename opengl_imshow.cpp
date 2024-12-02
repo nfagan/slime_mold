@@ -1,4 +1,4 @@
-#include "opengl_imshow.hpp"
+#include "imshow.hpp"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -289,7 +289,7 @@ bool init_drawable_components() {
 
 } //  anon
 
-void* ogl::boot() {
+void* gfx::boot() {
   if (!init_context()) {
     return nullptr;
   }
@@ -306,7 +306,7 @@ void* ogl::boot() {
   return globals.window;
 }
 
-void ogl::gui_new_frame() {
+void gfx::gui_new_frame() {
   if (!globals.init) {
     return;
   }
@@ -315,7 +315,7 @@ void ogl::gui_new_frame() {
   ImGui::NewFrame();
 }
 
-void ogl::begin_frame(
+void gfx::begin_frame(
   const Context& context, const void* image_data, const uint8_t* dir_im, int dir_im_dim) {
   //
   globals.prepared = false;
@@ -364,7 +364,7 @@ void ogl::begin_frame(
   globals.prepared = true;
 }
 
-void ogl::render() {
+void gfx::render() {
   if (!globals.prepared) {
     return;
   }
@@ -392,7 +392,7 @@ void ogl::render() {
   glfwSwapBuffers(globals.window);
 }
 
-void ogl::terminate() {
+void gfx::terminate() {
   if (globals.window) {
     glfwDestroyWindow(globals.window);
     globals.window = nullptr;
