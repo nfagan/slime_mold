@@ -1,6 +1,7 @@
 #pragma once
 
 #include "slime_mold.hpp"
+#include <string>
 
 struct GUIUpdateResult;
 
@@ -15,6 +16,8 @@ public:
     int desired_num_particles{};
     int desired_texture_size{};
     int edge_detection_threshold{13};
+    std::string overlay_text;
+    std::string direction_influencing_image_path;
   };
 
   struct Sim {

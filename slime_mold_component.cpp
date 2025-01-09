@@ -2,6 +2,7 @@
 #include "slime_mold.hpp"
 #include "gui.hpp"
 #include "image_manip.hpp"
+#include "text_rasterizer.hpp"
 
 namespace {
 
@@ -61,16 +62,15 @@ void set_particle_use_only_right_turns(SlimeMoldComponent& comp, bool v) {
   }
 }
 
-void try_update_direction_influencing_image(SlimeMoldComponent& comp, const std::string& im_p) {
+std::unique_ptr<uint8_t[]> load_src_image(const std::string& im_p, int rd) {
   std::unique_ptr<uint8_t[]> im_data_src;
   int sw;
   int sh;
   int sc;
   if (!im::read_image(im_p.c_str(), true, im_data_src, &sw, &sh, &sc)) {
-    return;
+    return nullptr;
   }
 
-  const int rd = 512;
   auto im_data_resize = std::make_unique<uint8_t[]>(rd * rd * sc);
   im::resize_image(im_data_src.get(), sw, sh, sc, im_data_resize.get(), rd, rd);
 
@@ -88,6 +88,41 @@ void try_update_direction_influencing_image(SlimeMoldComponent& comp, const std:
       im_gray[i * rd + j] = r;
     }
   }
+
+  return im_gray;
+}
+
+void try_update_direction_influencing_image(
+  SlimeMoldComponent& comp, const std::string& im_p, const std::string& text) {
+  //
+  const int rd = 512;
+  auto im_gray = load_src_image(im_p, rd);
+  if (!im_gray) {
+    return;
+  }
+
+#if 1
+  {
+    const int im_dim = rd;
+    auto raster_data = std::make_unique<uint8_t[]>(im_dim * im_dim);
+    font::TextRasterizerParams rp{};
+    rp.image_width = im_dim;
+    rp.image_height = im_dim;
+    rp.text_x0 = 10.0f;
+    rp.text_x1 = 500.0f;
+    rp.text_y0 = 30.0f;
+    rp.text_y1 = 80.0f;
+    rp.font_size = 48.0f;
+    rp.text = text.c_str();
+    if (font::rasterize_text(raster_data.get(), rp)) {
+      for (int i = 0; i < im_dim * im_dim; i++) {
+        const auto ig = float(im_gray[i]);
+        const auto tg = float(raster_data[i]);
+        im_gray[i] = uint8_t(lerp(0.5f, ig, tg));
+      }
+    }
+  }
+#endif
 
 #if 1
   auto im_edge = std::make_unique<uint8_t[]>(rd * rd);
@@ -222,8 +257,19 @@ void SlimeMoldComponent::on_gui_update(const GUIUpdateResult& res) {
   if (res.reinitialize) {
     params.need_reinitialize = true;
   }
+
+  bool need_update_dir_image{};
+  if (res.overlay_text) {
+    params.overlay_text = res.overlay_text.value();
+    need_update_dir_image = true;
+  }
   if (res.direction_influencing_image_path) {
-    try_update_direction_influencing_image(*this, res.direction_influencing_image_path.value());
+    params.direction_influencing_image_path = res.direction_influencing_image_path.value();
+    need_update_dir_image = true;
+  }
+  if (need_update_dir_image) {
+    try_update_direction_influencing_image(
+      *this, params.direction_influencing_image_path, params.overlay_text);
   }
   if (res.direction_influencing_image_scale) {
     config->direction_influencing_image_scale = res.direction_influencing_image_scale.value();

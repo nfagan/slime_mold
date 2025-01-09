@@ -1,6 +1,8 @@
 #include "slime_mold_component.hpp"
 #include "gui.hpp"
 #include "imshow.hpp"
+#include "image_manip.hpp"
+#include "text_rasterizer.hpp"
 
 #ifdef SM_IS_WGPU
 #define SM_IS_EMSCRIPTEN (1)
@@ -91,6 +93,8 @@ int main(int, char**) {
     return 1;
   }
 
+  font::initialize_text_rasterizer();
+
 #if SM_IS_EMSCRIPTEN
   emscripten_set_main_loop_arg(main_loop, window, 0, false);
 #else
@@ -98,6 +102,7 @@ int main(int, char**) {
     main_loop(window);
   }
 #endif
+  font::terminate_text_rasterizer();
   gfx::terminate();
 
   return 0;

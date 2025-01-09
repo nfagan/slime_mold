@@ -192,14 +192,23 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
   if (ImGui::TreeNode("DirectionInfluence")) {
     if (ImGui::Button("LoadImage")) {
       //    result.direction_influencing_image_path = "/Users/nick/Downloads/edge_im.png";
-      result.direction_influencing_image_path = "/Users/nick/Downloads/00003652_0002_15 copy.jpeg";
+//      result.direction_influencing_image_path = "/Users/nick/Downloads/00003652_0002_15 copy.jpeg";
+      result.direction_influencing_image_path = "/Volumes/external3/dunes/337AA033.jpeg";
       //    result.direction_influencing_image_path = "/Users/nick/Downloads/00003653_0014_2.jpeg";
+      result.overlay_text = "Some example text setsdfsdfsdfs sdlfksjdflkj sdfs";
     }
     {
       char text[2048];
       const auto f = ImGuiInputTextFlags_EnterReturnsTrue;
       if (ImGui::InputText("ImageFilePath", text, 2048, f)) {
         result.direction_influencing_image_path = text;
+      }
+    }
+    {
+      char text[2048];
+      const auto f = ImGuiInputTextFlags_EnterReturnsTrue;
+      if (ImGui::InputText("OverlayText", text, 2048, f)) {
+        result.overlay_text = text;
       }
     }
 

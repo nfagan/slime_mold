@@ -16,6 +16,10 @@ set(COMMON_SOURCES
         image_manip.cpp
         gui.cpp
         slime_mold_component.cpp
+        text_rasterizer.cpp
+        font.cpp
+        font_env.cpp
+        util.cpp
         #   imgui
         deps/imgui/imgui.cpp
         deps/imgui/imgui_demo.cpp

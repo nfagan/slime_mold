@@ -1017,6 +1017,11 @@ inline void count_wraps_to_range(T* value, T size, U* count) {
   detail::CountImpl<T, U>::count_wraps(value, size, count);
 }
 
+template <typename T, typename U>
+inline T lerp(U frac, const T& a, const T& b) {
+  return (U(1) - frac) * a + frac * b;
+}
+
 /*
  * random
  */

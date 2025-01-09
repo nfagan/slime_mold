@@ -65,11 +65,6 @@ const T& clamp(const T& value, const T& lo, const T& hi) {
   }
 }
 
-template <typename T, typename U>
-inline T lerp(U frac, const T& a, const T& b) {
-  return (U(1) - frac) * a + frac * b;
-}
-
 constexpr double pi() {
   return 3.14159265358979323846264338327950288;
 }

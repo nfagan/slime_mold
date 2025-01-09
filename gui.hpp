@@ -27,6 +27,7 @@ struct GUIUpdateResult {
   std::optional<int> new_num_particles;
   std::optional<int> new_texture_size;
   std::optional<std::string> direction_influencing_image_path;
+  std::optional<std::string> overlay_text;
   std::optional<float> direction_influencing_image_scale;
   bool close{};
 };
