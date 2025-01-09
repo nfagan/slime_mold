@@ -37,15 +37,19 @@ bool create_text_font(
   font::FontInfo** dst_font_info, std::unique_ptr<unsigned char[]>* dst_image_data,
   image::Descriptor* dst_image_desc) {
   //
-  auto arial = read_font("/Users/nick/source/grove-public/assets/fonts/Arial.ttf");
-  if (!arial) {
+#ifdef SM_IS_EMSCRIPTEN
+  auto text_font = read_font("fonts/Roboto-Medium.ttf");
+#else
+  auto text_font = read_font("/Users/nick/source/grove-public/assets/fonts/Arial.ttf");
+#endif
+  if (!text_font) {
     return false;
   }
 
   constexpr float font_size = 24.0f;
 //  float font_size_scale = 2.0f;
 
-  unsigned char* ttf_buffer = arial.value().data();
+  unsigned char* ttf_buffer = text_font.value().data();
 
 #if 0
   constexpr int num_code_points = 4;

@@ -31,13 +31,17 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
     result.reinitialize = true;
   }
 
-  if (ImGui::Button("ReinitializeHighRes")) {
+  if (ImGui::Button("HighRes")) {
     result.new_texture_size = 1024;
     result.new_num_particles = 25000;
   }
-
   ImGui::SameLine();
-  if (ImGui::Button("ReinitializeLowRes")) {
+  if (ImGui::Button("MedRes")) {
+    result.new_texture_size = 512;
+    result.new_num_particles = 8000;
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("LowRes")) {
     result.new_texture_size = 256;
     result.new_num_particles = 1000;
   }
@@ -190,6 +194,7 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
   }
 
   if (ImGui::TreeNode("DirectionInfluence")) {
+#ifndef SM_IS_EMSCRIPTEN
     if (ImGui::Button("LoadImage")) {
       //    result.direction_influencing_image_path = "/Users/nick/Downloads/edge_im.png";
 //      result.direction_influencing_image_path = "/Users/nick/Downloads/00003652_0002_15 copy.jpeg";
@@ -204,8 +209,16 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
         result.direction_influencing_image_path = text;
       }
     }
+#else
+    if (ImGui::Button("Exemplify")) {
+      result.overlay_text = "Warping, or warped; tugging bits of self by lines, anchors set down shallow.";
+      result.direction_influencing_image_scale = 0.05f;
+      *params.dir_image_mix = 0.25f;
+    }
+#endif
     {
       char text[2048];
+      std::fill(text, text + 2048, 0);
       const auto f = ImGuiInputTextFlags_EnterReturnsTrue;
       if (ImGui::InputText("OverlayText", text, 2048, f)) {
         result.overlay_text = text;

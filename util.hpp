@@ -3,6 +3,7 @@
 #include <memory>
 #include <array>
 #include <optional>
+#include <cassert>
 
 template <typename T>
 struct TemporaryView {

@@ -1,5 +1,9 @@
 #include "imshow.hpp"
+#ifdef SM_IS_EMSCRIPTEN
+#define GL_GLEXT_PROTOTYPES
+#else
 #include <glad/glad.h>
+#endif
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -38,9 +42,14 @@ bool init_context() {
     globals.glfw_init = true;
   }
 
+#ifdef SM_IS_EMSCRIPTEN
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+#else
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
   glfwWindowHint(GLFW_SAMPLES, 4);
   GLFWwindow* window = glfwCreateWindow(1024, 1024, "", nullptr, nullptr);
   if (!window) {
@@ -50,7 +59,9 @@ bool init_context() {
   }
 
   glfwMakeContextCurrent(window);
+#ifndef SM_IS_EMSCRIPTEN
   gladLoadGL();
+#endif
   glfwShowWindow(window);
   glfwSwapInterval(1);
   return true;
@@ -63,7 +74,11 @@ bool init_imgui(GLFWwindow* window) {
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   ImGui::StyleColorsDark();
   ImGui_ImplGlfw_InitForOpenGL(window, true);
+#ifdef SM_IS_EMSCRIPTEN
+  ImGui_ImplOpenGL3_Init("#version 300 es");
+#else
   ImGui_ImplOpenGL3_Init("#version 150");
+#endif
   return true;
 }
 
@@ -97,7 +112,7 @@ bool create_dir_texture(int dim) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, dim, dim, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, dim, dim, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
   glBindTexture(GL_TEXTURE_2D, 0);
   globals.dir_texture_dim = dim;
   return true;
@@ -116,7 +131,7 @@ bool create_dummy_texture() {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, dim, dim, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, dim, dim, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
   glBindTexture(GL_TEXTURE_2D, 0);
   return true;
 }
@@ -175,6 +190,34 @@ bool create_program(
 }
 
 bool init_program() {
+#ifdef SM_IS_EMSCRIPTEN
+  const char* vertex_shader_text =
+    "#version 300 es\n"
+    "layout (location = 0) in vec4 position;\n"
+    "out vec2 uv;\n"
+    "void main() {\n"
+    " uv = position.xy * 0.5 + 0.5;\n"
+    " gl_Position = vec4(position.x, position.y, 0.0, 1.0);\n"
+    "}";
+
+  const char* fragment_shader_text =
+    "#version 300 es\n"
+    "precision highp float;\n"
+    "in vec2 uv;\n"
+    "out vec4 frag_color;\n"
+    "uniform sampler2D image;\n"
+    "uniform sampler2D dir_image;\n"
+    "uniform int bw;\n"
+    "uniform float dir_image_mix;\n"
+    "void main() {\n"
+    " vec3 col = texture(image, uv).rgb;\n"
+    " float dir_color = texture(dir_image, uv).r;\n"
+    " if (bw == 1) {\n"
+    "   col = vec3((col.r + col.g + col.b) / 3.0);\n"
+    " }\n"
+    " frag_color = vec4(mix(col, vec3(dir_color), dir_image_mix), 1.0);\n"
+    "}";
+#else
   const char* vertex_shader_text =
     "#version 330 core\n"
     "layout (location = 0) in vec4 position;\n"
@@ -200,6 +243,7 @@ bool init_program() {
     " }\n"
     " frag_color = vec4(mix(col, vec3(dir_color), dir_image_mix), 1.0);\n"
     "}";
+#endif
 
   if (!create_program(vertex_shader_text, fragment_shader_text, &globals.program)) {
     return false;

@@ -4,17 +4,9 @@
 #include "image_manip.hpp"
 #include "text_rasterizer.hpp"
 
-#ifdef SM_IS_WGPU
-#define SM_IS_EMSCRIPTEN (1)
-#endif
-
-#ifdef SM_IS_OPENGL
-#define SM_IS_EMSCRIPTEN (0)
-#endif
-
 #include <imgui.h>
 
-#ifdef SM_IS_WGPU
+#ifdef SM_IS_EMSCRIPTEN
 #include <emscripten.h>
 #include <emscripten/html5.h>
 #endif
@@ -55,7 +47,7 @@ void main_render() {
   gfx::render();
 }
 
-#if SM_IS_EMSCRIPTEN
+#ifdef SM_IS_EMSCRIPTEN
 int mouse_move_callback(int, const EmscriptenMouseEvent* e, void*) {
   globals.cursor_x = float(e->clientX);
   globals.cursor_y = float(e->clientY);
@@ -65,7 +57,7 @@ int mouse_move_callback(int, const EmscriptenMouseEvent* e, void*) {
 
 } //  anon
 
-#if SM_IS_EMSCRIPTEN
+#ifdef SM_IS_EMSCRIPTEN
 //  https://github.com/ocornut/imgui/issues/6640
 EM_JS(int, browser_get_width, (), {
   const { width, height } = canvas.getBoundingClientRect();
@@ -84,7 +76,7 @@ static void get_window_dimensions(int* dw, int* dh) {
 #endif
 
 int main(int, char**) {
-#if SM_IS_EMSCRIPTEN
+#ifdef SM_IS_EMSCRIPTEN
   emscripten_set_mousemove_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, 0, 1, mouse_move_callback);
 #endif
 
@@ -95,15 +87,15 @@ int main(int, char**) {
 
   font::initialize_text_rasterizer();
 
-#if SM_IS_EMSCRIPTEN
+#ifdef SM_IS_EMSCRIPTEN
   emscripten_set_main_loop_arg(main_loop, window, 0, false);
 #else
   while (!glfwWindowShouldClose((GLFWwindow*) window)) {
     main_loop(window);
   }
-#endif
   font::terminate_text_rasterizer();
   gfx::terminate();
+#endif
 
   return 0;
 }
@@ -116,7 +108,7 @@ void main_begin_frame(GLFWwindow* window) {
   int window_height;
   glfwGetWindowSize(window, &window_width, &window_height);
 
-#if SM_IS_EMSCRIPTEN
+#ifdef SM_IS_EMSCRIPTEN
   int browser_w;
   int browser_h;
   get_window_dimensions(&browser_w, &browser_h);

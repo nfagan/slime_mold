@@ -95,10 +95,17 @@ std::unique_ptr<uint8_t[]> load_src_image(const std::string& im_p, int rd) {
 void try_update_direction_influencing_image(
   SlimeMoldComponent& comp, const std::string& im_p, const std::string& text) {
   //
+#ifdef SM_IS_EMSCRIPTEN
+  const int rd = 256;
+  const float font_scale = 0.5f;
+#else
   const int rd = 512;
+  const float font_scale = 1.0f;
+#endif
   auto im_gray = load_src_image(im_p, rd);
   if (!im_gray) {
-    return;
+    im_gray = std::make_unique<uint8_t[]>(rd * rd);
+    std::fill(im_gray.get(), im_gray.get() + rd * rd, 0);
   }
 
 #if 1
@@ -109,16 +116,21 @@ void try_update_direction_influencing_image(
     rp.image_width = im_dim;
     rp.image_height = im_dim;
     rp.text_x0 = 10.0f;
-    rp.text_x1 = 500.0f;
+    rp.text_x1 = std::min(500.0f, float(rd));
     rp.text_y0 = 30.0f;
     rp.text_y1 = 80.0f;
-    rp.font_size = 48.0f;
+    rp.font_size = 48.0f * font_scale;
     rp.text = text.c_str();
     if (font::rasterize_text(raster_data.get(), rp)) {
       for (int i = 0; i < im_dim * im_dim; i++) {
         const auto ig = float(im_gray[i]);
         const auto tg = float(raster_data[i]);
-        im_gray[i] = uint8_t(lerp(0.5f, ig, tg));
+#ifdef SM_IS_EMSCRIPTEN
+        const float t = 1.0f;
+#else
+        const float t = 0.5f;
+#endif
+        im_gray[i] = uint8_t(lerp(t, ig, tg));
       }
     }
   }
