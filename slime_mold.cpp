@@ -1,6 +1,5 @@
 #include "slime_mold.hpp"
-#include "random.hpp"
-#include "util.hpp"
+#include "base_math.hpp"
 #include <chrono>
 
 #if DYNAMIC_TEXTURE_SIZE
@@ -64,11 +63,6 @@ const T& clamp(const T& value, const T& lo, const T& hi) {
   } else {
     return value;
   }
-}
-
-template <typename T, typename U>
-inline T lerp(U frac, const T& a, const T& b) {
-  return (U(1) - frac) * a + frac * b;
 }
 
 constexpr double pi() {
@@ -274,7 +268,10 @@ Vec2f wrap01(Vec2f v) {
   return v;
 }
 
-void update_particle(const Config& config, SlimeParticle& part, const float* im) {
+void update_particle(
+  const Config& config, SlimeParticle& part, const float* im,
+  const DirectionInfluencingImage& dir_im) {
+  //
   auto head = to_vec(part.heading);
   auto left = to_vec(part.left_sensor);
   auto right = to_vec(part.right_sensor);
@@ -299,6 +296,19 @@ void update_particle(const Config& config, SlimeParticle& part, const float* im)
     float sgn = i == 1 ? left_sgn : -1.0f;
     new_head += sgn * part.turn_speed * dt;
   }
+
+#if 1
+  if (dir_im.theta) {
+    float px = clamp(part.position.x, 0.0f, 1.0f);
+    float py = clamp(part.position.y, 0.0f, 1.0f);
+    int di = std::max(0, std::min(int(float(dir_im.h) * py), dir_im.h-1));
+    int dj = std::max(0, std::min(int(float(dir_im.w) * px), dir_im.w-1));
+    const float dir_im_dir = dir_im.theta[ij_to_linear(di, dj, dir_im.w, 1)];
+    new_head = lerp(config.direction_influencing_image_scale, new_head, dir_im_dir);
+  }
+#else
+  (void) dir_im;
+#endif
 
   auto speed_sens = 1.0f - std::exp(-len * part.sensor_speed_sensitivity);
   auto speed = part.speed + part.sensor_speed_sensitivity_scale * speed_sens;
@@ -477,9 +487,9 @@ std::unique_ptr<SlimeParticle[]> gen::make_slime_mold_particles(const SlimeMoldC
   return result;
 }
 
-float gen::update_slime_mold_particles(SlimeParticle* particles,
-                                       const SlimeMoldConfig& config,
-                                       SlimeMoldSimulationContext* context) {
+float gen::update_slime_mold_particles(
+  SlimeParticle* particles, const SlimeMoldConfig& config, SlimeMoldSimulationContext* context) {
+  //
   auto t0 = std::chrono::high_resolution_clock::now();
 
   auto* data0 = context->texture_data0;
@@ -487,7 +497,7 @@ float gen::update_slime_mold_particles(SlimeParticle* particles,
   auto* tmp = context->texture_data2;
 
   for (int i = 0; i < config.num_particles; i++) {
-    update_particle(config, particles[i], data0);
+    update_particle(config, particles[i], data0, *context->direction_influencing_image);
   }
 
   for (int i = 0; i < config.num_particles; i++) {
@@ -575,25 +585,4 @@ void gen::set_particle_speed_power(
 
 void gen::set_particle_right_only(SlimeParticle* particles, SlimeMoldConfig& config, bool value) {
   set_right_only(particles, config.num_particles, value);
-}
-
-Vec3f gen::sample_slime_mold_texture_data01(const float* data, const Vec2f& p01, float r01) {
-  const bool average = true;
-  auto v = sense_circular(data, p01, r01, average);
-  return clamp_each(v, Vec3f{}, Vec3f{1.0f});
-}
-
-void gen::add_value(float* data, const Vec2f& p01, float radius01, const Vec3f& v3) {
-  const auto nc = Config::num_texture_channels;
-  const auto td = Config::texture_dim;
-  const float v[3]{v3.x, v3.y, v3.z};
-  clamped_add(data, td, td, nc, p01, radius01, v);
-}
-
-void gen::add_value(
-  float* data, int tex_dim, int tex_components,
-  const Vec2f& p01, float radius01, const Vec3f& v3) {
-  //
-  const float v[3]{v3.x, v3.y, v3.z};
-  clamped_add(data, tex_dim, tex_dim, tex_components, p01, radius01, v);
 }

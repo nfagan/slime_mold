@@ -5,3 +5,4 @@ cmake-build-minsizerel
 cmake-build-release
 cmake-build-relwithdebinfo
 cmake-build-web
+*.asv

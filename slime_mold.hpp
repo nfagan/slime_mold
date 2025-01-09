@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Vec2.hpp"
-#include "Vec3.hpp"
+#include "base_math.hpp"
 #include <memory>
 
 #define DYNAMIC_TEXTURE_SIZE (1)
@@ -57,6 +56,7 @@ struct SlimeMoldConfig {
   int scale_speed_power{0};
   int turn_speed_power{0};
   bool only_right_turns{true};
+  float direction_influencing_image_scale{0.0f};  //  [0, 1]
 };
 
 struct SlimeMoldParams {
@@ -82,6 +82,12 @@ struct SlimeParticle {
   bool right_only;
 };
 
+struct DirectionInfluencingImage {
+  std::unique_ptr<float[]> theta;
+  int w;
+  int h;
+};
+
 struct SlimeMoldSimulationContext {
   float* texture_data0;
   uint8_t* rgbau8_texture_data0;
@@ -94,6 +100,7 @@ struct SlimeMoldSimulationContext {
   int perturb_iters;
   uint64_t tot_iter;
   const SlimeMoldParams* params;
+  const DirectionInfluencingImage* direction_influencing_image;
 };
 
 struct DefaultSlimeMoldSimulationTextureData {
@@ -109,23 +116,12 @@ std::unique_ptr<float[]> make_slime_mold_texture_data();
 std::unique_ptr<uint8_t[]> make_rgbau8_slime_mold_texture_data();
 DefaultSlimeMoldSimulationTextureData make_default_slime_mold_texture_data();
 std::unique_ptr<SlimeParticle[]> make_slime_mold_particles(const SlimeMoldConfig& config);
-void set_particle_turn_speed_power(SlimeParticle* particles,
-                                   SlimeMoldConfig& config,
-                                   int new_power);
-void set_particle_speed_power(SlimeParticle* particles,
-                              SlimeMoldConfig& config,
-                              int new_power);
+void set_particle_turn_speed_power(
+  SlimeParticle* particles, SlimeMoldConfig& config, int new_power);
+void set_particle_speed_power(
+  SlimeParticle* particles, SlimeMoldConfig& config, int new_power);
 void set_particle_right_only(SlimeParticle* particles, SlimeMoldConfig& config, bool value);
-Vec3f sample_slime_mold_texture_data01(const float* data, const Vec2f& p01, float r01);
-void add_value(float* data, const Vec2f& p01, float radius01, const Vec3f& value);
-void add_value(float* data,
-               int tex_dim,
-               int tex_components,
-               const Vec2f& p01,
-               float radius01,
-               const Vec3f& value);
-float update_slime_mold_particles(SlimeParticle* particles,
-                                  const SlimeMoldConfig& config,
-                                  SlimeMoldSimulationContext* context);
+float update_slime_mold_particles(
+  SlimeParticle* particles, const SlimeMoldConfig& config, SlimeMoldSimulationContext* context);
 
 }
