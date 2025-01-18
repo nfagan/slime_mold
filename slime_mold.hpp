@@ -112,6 +112,13 @@ struct DefaultSlimeMoldSimulationTextureData {
   std::unique_ptr<uint8_t[]> rgbau8_texture_data;
 };
 
+struct UpdateSlimeMoldParticlesResult {
+  float dt_ms;
+  float update_ms;
+  float deposit_ms;
+  float diffuse_ms;
+};
+
 std::unique_ptr<float[]> make_slime_mold_texture_data();
 std::unique_ptr<uint8_t[]> make_rgbau8_slime_mold_texture_data();
 DefaultSlimeMoldSimulationTextureData make_default_slime_mold_texture_data();
@@ -121,7 +128,7 @@ void set_particle_turn_speed_power(
 void set_particle_speed_power(
   SlimeParticle* particles, SlimeMoldConfig& config, int new_power);
 void set_particle_right_only(SlimeParticle* particles, SlimeMoldConfig& config, bool value);
-float update_slime_mold_particles(
+UpdateSlimeMoldParticlesResult update_slime_mold_particles(
   SlimeParticle* particles, const SlimeMoldConfig& config, SlimeMoldSimulationContext* context);
 
 }

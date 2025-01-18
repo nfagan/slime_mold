@@ -6,8 +6,6 @@
 struct GUIUpdateResult;
 
 struct SlimeMoldComponent {
-  friend class SoilGUI;
-
 public:
   struct Params {
     bool enabled{true};
@@ -33,7 +31,7 @@ public:
 
 public:
   void reinitialize();
-  float update();
+  gen::UpdateSlimeMoldParticlesResult update();
   void on_gui_update(const GUIUpdateResult& res);
   int get_texture_dim() const;
   int get_current_num_particles() const;
