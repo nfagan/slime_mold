@@ -194,6 +194,11 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
   }
 
   if (ImGui::TreeNode("DirectionInfluence")) {
+    if (ImGui::Button("Exemplify")) {
+      result.overlay_text = "Warping, or warped; tugging bits of self by lines, anchors set down shallow.";
+      result.direction_influencing_image_scale = 0.05f;
+      *params.dir_image_mix = 0.0f;
+    }
 #ifndef SM_IS_EMSCRIPTEN
     if (ImGui::Button("LoadImage")) {
       //    result.direction_influencing_image_path = "/Users/nick/Downloads/edge_im.png";
@@ -208,12 +213,6 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
       if (ImGui::InputText("ImageFilePath", text, 2048, f)) {
         result.direction_influencing_image_path = text;
       }
-    }
-#else
-    if (ImGui::Button("Exemplify")) {
-      result.overlay_text = "Warping, or warped; tugging bits of self by lines, anchors set down shallow.";
-      result.direction_influencing_image_scale = 0.05f;
-      *params.dir_image_mix = 0.25f;
     }
 #endif
     {

@@ -15,6 +15,13 @@
 
 //  ------------------------------------------------------------------------------------
 
+/*
+ * @TODO:
+ * 4-component directional influence image
+ * mix between text and image underlying the directional influence
+ * mix between the particle sim and directional influence image
+ */
+
 static void main_loop(void* window);
 
 namespace {
@@ -28,17 +35,17 @@ struct {
   float dir_image_mix{};
 } globals;
 
-float main_update() {
+gen::UpdateSlimeMoldParticlesResult main_update() {
   return globals.sm.update();
 }
 
-void main_gui_update(float sim_dt) {
+void main_gui_update(const gen::UpdateSlimeMoldParticlesResult& sim_res) {
   const float fps = ImGui::GetIO().Framerate;
 
   gfx::gui_new_frame();
 
   auto res = render_gui(globals.sm, {
-    fps, sim_dt, &globals.use_bw, &globals.full_screen_image,
+    fps, sim_res.dt_ms, &globals.use_bw, &globals.full_screen_image,
     &globals.dir_image_mix, globals.cursor_x, globals.cursor_y});
   globals.sm.on_gui_update(res);
 }
@@ -134,8 +141,8 @@ void main_begin_frame(GLFWwindow* window) {
 
 static void main_loop(void* window) {
   glfwPollEvents();
-  const float sim_dt = main_update();
+  const auto sim_res = main_update();
   main_begin_frame((GLFWwindow*) window);
-  main_gui_update(sim_dt);
+  main_gui_update(sim_res);
   main_render();
 }

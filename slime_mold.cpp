@@ -487,25 +487,42 @@ std::unique_ptr<SlimeParticle[]> gen::make_slime_mold_particles(const SlimeMoldC
   return result;
 }
 
-float gen::update_slime_mold_particles(
+UpdateSlimeMoldParticlesResult gen::update_slime_mold_particles(
   SlimeParticle* particles, const SlimeMoldConfig& config, SlimeMoldSimulationContext* context) {
   //
+  UpdateSlimeMoldParticlesResult result{};
+
   auto t0 = std::chrono::high_resolution_clock::now();
 
   auto* data0 = context->texture_data0;
   auto* data1 = context->texture_data1;
   auto* tmp = context->texture_data2;
 
-  for (int i = 0; i < config.num_particles; i++) {
-    update_particle(config, particles[i], data0, *context->direction_influencing_image);
+  {
+    auto bt0 = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < config.num_particles; i++) {
+      update_particle(config, particles[i], data0, *context->direction_influencing_image);
+    }
+    result.update_ms = float(std::chrono::duration<double>(
+      std::chrono::high_resolution_clock::now() - bt0).count() * 1e3);
   }
 
-  for (int i = 0; i < config.num_particles; i++) {
-    deposit(particles[i], data0);
+  {
+    auto bt0 = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < config.num_particles; i++) {
+      deposit(particles[i], data0);
+    }
+    result.deposit_ms = float(std::chrono::duration<double>(
+      std::chrono::high_resolution_clock::now() - bt0).count() * 1e3);
   }
 
-  if (config.diffuse_enabled) {
-    diffuse(data0, data1, tmp, config.decay, config.diffuse_speed, config.filter_size);
+  {
+    auto bt0 = std::chrono::high_resolution_clock::now();
+    if (config.diffuse_enabled) {
+      diffuse(data0, data1, tmp, config.decay, config.diffuse_speed, config.filter_size);
+    }
+    result.diffuse_ms = float(std::chrono::duration<double>(
+      std::chrono::high_resolution_clock::now() - bt0).count() * 1e3);
   }
 
   if (!context->set_perturb_data) {
@@ -560,7 +577,8 @@ float gen::update_slime_mold_particles(
     }
   }
 
-  return float(dt_ms);
+  result.dt_ms = float(dt_ms);
+  return result;
 }
 
 void gen::set_particle_turn_speed_power(

@@ -29,10 +29,14 @@ struct {
   int dir_image_uniform_location{};
   int dir_image_mix_uniform_location{};
   int bw_uniform_location{};
+  int full_screen_uniform_location{};
+  int screen_resolution_uniform_location{};
   int dir_texture_dim{};
   GLuint dir_texture{};
   bool render_bw{};
   float dir_image_mix{};
+  float render_screen_resolution{1.0f};
+  bool render_full_screen{};
 } globals;
 
 bool init_context() {
@@ -191,8 +195,16 @@ bool create_program(
 
 bool init_program() {
 #ifdef SM_IS_EMSCRIPTEN
-  const char* vertex_shader_text =
+  const char* vert_shader_header = "#version 300 es\n";
+  const char* frag_shader_header =
     "#version 300 es\n"
+    "precision highp float;\n";
+#else
+  const char* vert_shader_header = "#version 330 core\n";
+  const char* frag_shader_header = "#version 330 core\n";
+#endif
+
+  const char* vert_shader_body =
     "layout (location = 0) in vec4 position;\n"
     "out vec2 uv;\n"
     "void main() {\n"
@@ -200,52 +212,32 @@ bool init_program() {
     " gl_Position = vec4(position.x, position.y, 0.0, 1.0);\n"
     "}";
 
-  const char* fragment_shader_text =
-    "#version 300 es\n"
-    "precision highp float;\n"
+  const char* frag_shader_body =
     "in vec2 uv;\n"
     "out vec4 frag_color;\n"
     "uniform sampler2D image;\n"
     "uniform sampler2D dir_image;\n"
     "uniform int bw;\n"
     "uniform float dir_image_mix;\n"
+    "uniform int use_full_screen;\n"
+    "uniform float screen_resolution;\n"
     "void main() {\n"
-    " vec3 col = texture(image, uv).rgb;\n"
-    " float dir_color = texture(dir_image, uv).r;\n"
+    " vec2 uv2 = gl_FragCoord.xy / screen_resolution;\n"
+    " if (use_full_screen == 1) { uv2 = uv; }\n"
+    " float ib_uv = float(uv2.x <= 1.0f && uv2.y <= 1.0f);\n"
+    " vec3 col = texture(image, uv2).rgb;\n"
+    " float dir_color = texture(dir_image, uv2).r;\n"
     " if (bw == 1) {\n"
     "   col = vec3((col.r + col.g + col.b) / 3.0);\n"
     " }\n"
-    " frag_color = vec4(mix(col, vec3(dir_color), dir_image_mix), 1.0);\n"
-    "}";
-#else
-  const char* vertex_shader_text =
-    "#version 330 core\n"
-    "layout (location = 0) in vec4 position;\n"
-    "out vec2 uv;\n"
-    "void main() {\n"
-    " uv = position.xy * 0.5 + 0.5;\n"
-    " gl_Position = vec4(position.x, position.y, 0.0, 1.0);\n"
+    " float dm = dir_color; if (dir_color <= dir_image_mix) { dm = 0.0f; }\n"
+    " frag_color = vec4(ib_uv * mix(col, vec3(dir_color), dm), 1.0);\n"
     "}";
 
-  const char* fragment_shader_text =
-    "#version 330 core\n"
-    "in vec2 uv;\n"
-    "out vec4 frag_color;\n"
-    "uniform sampler2D image;\n"
-    "uniform sampler2D dir_image;\n"
-    "uniform int bw;\n"
-    "uniform float dir_image_mix;\n"
-    "void main() {\n"
-    " vec3 col = texture(image, uv).rgb;\n"
-    " float dir_color = texture(dir_image, uv).r;\n"
-    " if (bw == 1) {\n"
-    "   col = vec3((col.r + col.g + col.b) / 3);\n"
-    " }\n"
-    " frag_color = vec4(mix(col, vec3(dir_color), dir_image_mix), 1.0);\n"
-    "}";
-#endif
+  const auto vert_shader_text = std::string(vert_shader_header) + "\n" + vert_shader_body;
+  const auto frag_shader_text = std::string(frag_shader_header) + "\n" + frag_shader_body;
 
-  if (!create_program(vertex_shader_text, fragment_shader_text, &globals.program)) {
+  if (!create_program(vert_shader_text.c_str(), frag_shader_text.c_str(), &globals.program)) {
     return false;
   }
 
@@ -279,6 +271,22 @@ bool init_program() {
       return false;
     } else {
       globals.bw_uniform_location = loc;
+    }
+  }
+  {
+    int loc = glGetUniformLocation(globals.program, "use_full_screen");
+    if (loc == -1) {
+      return false;
+    } else {
+      globals.full_screen_uniform_location = loc;
+    }
+  }
+  {
+    int loc = glGetUniformLocation(globals.program, "screen_resolution");
+    if (loc == -1) {
+      return false;
+    } else {
+      globals.screen_resolution_uniform_location = loc;
     }
   }
 
@@ -373,6 +381,8 @@ void gfx::begin_frame(
   globals.width = context.surface_width;
   globals.height = context.surface_height;
   globals.render_bw = context.enable_bw;
+  globals.render_full_screen = context.full_screen;
+  globals.render_screen_resolution = float(std::min(globals.width, globals.height));
 
   if (context.texture_dim != globals.texture_dim) {
     if (!create_main_texture(context.texture_dim)) {
@@ -429,6 +439,8 @@ void gfx::render() {
   glUniform1i(globals.dir_image_uniform_location, 1);
   glUniform1i(globals.bw_uniform_location, int(globals.render_bw));
   glUniform1f(globals.dir_image_mix_uniform_location, globals.dir_image_mix);
+  glUniform1f(globals.screen_resolution_uniform_location, globals.render_screen_resolution);
+  glUniform1i(globals.full_screen_uniform_location, int(globals.render_full_screen));
   glBindVertexArray(globals.vao);
   glDrawArrays(GL_TRIANGLES, 0, 6);
 

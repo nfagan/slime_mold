@@ -32,8 +32,8 @@ void init_sim(SlimeMoldComponent& component) {
   impl->initialized = true;
 }
 
-float update_sim(SlimeMoldComponent& component) {
-  float res{};
+gen::UpdateSlimeMoldParticlesResult update_sim(SlimeMoldComponent& component) {
+  gen::UpdateSlimeMoldParticlesResult res{};
   auto& sim = component.sim;
   if (sim.initialized) {
     res = gen::update_slime_mold_particles(
@@ -130,7 +130,8 @@ void try_update_direction_influencing_image(
 #else
         const float t = 0.5f;
 #endif
-        im_gray[i] = uint8_t(lerp(t, ig, tg));
+//        im_gray[i] = uint8_t(lerp(t, ig, tg));
+        im_gray[i] = uint8_t(std::max(ig, tg));
       }
     }
   }
@@ -192,7 +193,7 @@ const uint8_t* SlimeMoldComponent::read_rgbau8_image_data() const {
   return sim.texture_data.rgbau8_texture_data.get();
 }
 
-float SlimeMoldComponent::update() {
+gen::UpdateSlimeMoldParticlesResult SlimeMoldComponent::update() {
   if (params.initialized && params.need_reinitialize) {
 #if DYNAMIC_TEXTURE_SIZE
     if (params.desired_texture_size > 0) {
@@ -206,7 +207,7 @@ float SlimeMoldComponent::update() {
     params.need_reinitialize = false;
   }
 
-  float res{};
+  gen::UpdateSlimeMoldParticlesResult res{};
   if (params.enabled) {
     if (!params.initialized) {
       init_sim(*this);
