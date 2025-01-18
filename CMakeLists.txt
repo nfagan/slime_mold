@@ -46,7 +46,7 @@ target_compile_definitions(slime_mold_wgpu PRIVATE SM_IS_WGPU SM_IS_EMSCRIPTEN)
 add_executable(slime_mold_wgl ${COMMON_SOURCES} opengl_imshow.cpp deps/imgui/backends/imgui_impl_opengl3.cpp)
 target_include_directories(slime_mold_wgl PRIVATE ${COMMON_INCLUDES} deps/glad/include deps/stb)
 
-set_target_properties(slime_mold_wgl PROPERTIES LINK_FLAGS "-s USE_GLFW=3 -s USE_WEBGL2=1 -s FULL_ES3=1 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s NO_EXIT_RUNTIME=0 -s ASSERTIONS=1 --no-heap-copy --preload-file ${CMAKE_SOURCE_DIR}/deps/imgui/misc/fonts@/fonts")
+set_target_properties(slime_mold_wgl PROPERTIES LINK_FLAGS "-s USE_GLFW=3 -s USE_WEBGL2=1 -s FULL_ES3=1 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s NO_EXIT_RUNTIME=0 -s ASSERTIONS=1 --no-heap-copy --preload-file ${CMAKE_SOURCE_DIR}/deps/imgui/misc/fonts@/fonts --preload-file ${CMAKE_SOURCE_DIR}/res@/")
 target_compile_definitions(slime_mold_wgl PRIVATE SM_IS_OPENGL SM_IS_EMSCRIPTEN)
 
 #   opengl / local

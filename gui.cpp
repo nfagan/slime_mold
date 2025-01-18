@@ -194,9 +194,16 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
   }
 
   if (ImGui::TreeNode("DirectionInfluence")) {
-    if (ImGui::Button("Exemplify")) {
+    if (ImGui::Button("Ex. 1")) {
       result.overlay_text = "Warping, or warped; tugging bits of self by lines, anchors set down shallow.";
       result.direction_influencing_image_scale = 0.05f;
+      result.direction_influencing_image_path = "images/336AA021.jpeg";
+      *params.dir_image_mix = 0.0f;
+    }
+    if (ImGui::Button("Ex. 2")) {
+      result.overlay_text = "Approaching the sea, the self curves.";
+      result.direction_influencing_image_scale = 0.05f;
+      result.direction_influencing_image_path = "images/336AA030.jpeg";
       *params.dir_image_mix = 0.0f;
     }
 #ifndef SM_IS_EMSCRIPTEN

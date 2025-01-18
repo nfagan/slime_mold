@@ -95,7 +95,7 @@ std::unique_ptr<uint8_t[]> load_src_image(const std::string& im_p, int rd) {
 void try_update_direction_influencing_image(
   SlimeMoldComponent& comp, const std::string& im_p, const std::string& text) {
   //
-#ifdef SM_IS_EMSCRIPTEN
+#if 0
   const int rd = 256;
   const float font_scale = 0.5f;
 #else

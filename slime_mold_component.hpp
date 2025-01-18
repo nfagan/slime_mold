@@ -6,8 +6,6 @@
 struct GUIUpdateResult;
 
 struct SlimeMoldComponent {
-  friend class SoilGUI;
-
 public:
   struct Params {
     bool enabled{true};

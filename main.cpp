@@ -17,6 +17,7 @@
 
 /*
  * @TODO:
+ * load images in web implementation
  * 4-component directional influence image
  * mix between text and image underlying the directional influence
  * mix between the particle sim and directional influence image
