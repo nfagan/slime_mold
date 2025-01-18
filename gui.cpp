@@ -3,6 +3,10 @@
 #include "slime_mold.hpp"
 #include <imgui.h>
 
+#ifdef SM_IS_EMSCRIPTEN
+#include "web_gui.hpp"
+#endif
+
 GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& params) {
   float fps = params.app_fps;
   float sim_t = params.sim_t;
@@ -31,49 +35,88 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
     result.reinitialize = true;
   }
 
-  if (ImGui::Button("HighRes")) {
+  bool high_res{};
+  bool med_res{};
+  bool low_res{};
+
+#ifdef SM_IS_EMSCRIPTEN
+  auto web_gui_res = gui::web_gui_update();
+  high_res = web_gui_res.quality_preset == "high";
+  med_res = web_gui_res.quality_preset == "med";
+  low_res = web_gui_res.quality_preset == "low";
+#endif
+
+  high_res = high_res | ImGui::Button("HighRes");
+  ImGui::SameLine();
+  med_res = med_res | ImGui::Button("MedRes");
+  ImGui::SameLine();
+  low_res = low_res | ImGui::Button("LowRes");
+
+  if (high_res) {
     result.new_texture_size = 1024;
     result.new_num_particles = 25000;
   }
-  ImGui::SameLine();
-  if (ImGui::Button("MedRes")) {
+  if (med_res) {
     result.new_texture_size = 512;
     result.new_num_particles = 8000;
   }
-  ImGui::SameLine();
-  if (ImGui::Button("LowRes")) {
+  if (low_res) {
     result.new_texture_size = 256;
     result.new_num_particles = 1000;
   }
 
+  bool mid_coh{};
+  bool high_coh{};
+  bool chaotic{};
+  bool fragile{};
+  bool clustered{};
+  const bool is_high_res = gen::SlimeMoldConfig::texture_dim > 512;
+
+#ifdef SM_IS_EMSCRIPTEN
+  mid_coh = web_gui_res.style_preset == "mid_coh";
+  high_coh = web_gui_res.style_preset == "high_coh";
+  chaotic = web_gui_res.style_preset == "chaotic";
+  fragile = web_gui_res.style_preset == "fragile";
+  clustered = web_gui_res.style_preset == "clustered";
+#endif
+
   if (ImGui::TreeNode("Presets")) {
-    const bool is_high_res = gen::SlimeMoldConfig::texture_dim > 512;
-    if (ImGui::SmallButton("MidCoherence")) {
-      result.turn_speed_power = 2;
-      result.speed_power = 2 - int(is_high_res);
-      result.only_right_turns = false;
-    }
-    if (ImGui::SmallButton("HighCoherence")) {
-      result.turn_speed_power = 3 + int(is_high_res);
-      result.speed_power = 2 - int(is_high_res);
-      result.only_right_turns = false;
-    }
-    if (ImGui::SmallButton("Chaotic")) {
-      result.turn_speed_power = 0;
-      result.speed_power = 2 - int(is_high_res);
-      result.only_right_turns = true;
-    }
-    if (ImGui::SmallButton("Fragile")) {
-      result.turn_speed_power = 2;
-      result.speed_power = 1 - int(is_high_res);
-      result.only_right_turns = false;
-    }
-    if (ImGui::SmallButton("Clustered")) {
-      result.turn_speed_power = 4;
-      result.speed_power = is_high_res ? 0 : 2;
-      result.only_right_turns = true;
-    }
+    mid_coh = mid_coh | ImGui::SmallButton("MidCoherence");
+    high_coh = high_coh | ImGui::SmallButton("HighCoherence");
+    chaotic = chaotic | ImGui::SmallButton("Chaotic");
+    fragile = fragile | ImGui::SmallButton("Fragile");
+    clustered = clustered | ImGui::SmallButton("Clustered");
     ImGui::TreePop();
+  }
+
+  if (mid_coh) {
+    result.turn_speed_power = 2;
+    result.speed_power = 2 - int(is_high_res);
+    result.only_right_turns = false;
+  }
+
+  if (high_coh) {
+    result.turn_speed_power = 3 + int(is_high_res);
+    result.speed_power = 2 - int(is_high_res);
+    result.only_right_turns = false;
+  }
+
+  if (chaotic) {
+    result.turn_speed_power = 0;
+    result.speed_power = 2 - int(is_high_res);
+    result.only_right_turns = true;
+  }
+
+  if (fragile) {
+    result.turn_speed_power = 2;
+    result.speed_power = 1 - int(is_high_res);
+    result.only_right_turns = false;
+  }
+
+  if (clustered) {
+    result.turn_speed_power = 4;
+    result.speed_power = is_high_res ? 0 : 2;
+    result.only_right_turns = true;
   }
 
   if (ImGui::TreeNode("NumParticles")) {
@@ -192,6 +235,23 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
   if (ImGui::Checkbox("AverageImage", &avg_img)) {
     result.average_image = avg_img;
   }
+
+#ifdef SM_IS_EMSCRIPTEN
+  if (!web_gui_res.text.empty()) {
+    result.overlay_text = web_gui_res.text;
+    result.direction_influencing_image_scale = 0.05f;
+    result.direction_influencing_image_path = "images/336AA021.jpeg";
+    *params.dir_image_mix = 0.0f;
+  }
+  if (web_gui_res.set_dir_influence_image_enabled) {
+    if (web_gui_res.set_dir_influence_image_enabled.value()) {
+      *params.dir_image_mix = 0.0f;
+    } else {
+      *params.dir_image_mix = 1.0f;
+      result.direction_influencing_image_scale = 0.0f;
+    }
+  }
+#endif
 
   if (ImGui::TreeNode("DirectionInfluence")) {
     if (ImGui::Button("Ex. 1")) {
