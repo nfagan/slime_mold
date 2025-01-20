@@ -26,6 +26,9 @@ public:
   void set_text(std::string p) { text = p; }
   std::string check_text() { auto p = text; text = ""; return p; }
 
+  void set_direction_influence_image_path(std::string p) { dir_influence_image_path = p; }
+  std::string check_direction_influence_image_path() { auto p = dir_influence_image_path; dir_influence_image_path = ""; return p; }
+
   void disable_direction_influence_image() { set_dir_influence_image_enabled = false; }
   int should_disable_direction_influence_image() {
     auto v =
@@ -67,6 +70,7 @@ private:
   std::string quality_preset;
   std::string style_preset;
   std::string text;
+  std::string dir_influence_image_path;
   int set_debug_gui_enabled{-1};
   std::optional<bool> set_dir_influence_image_enabled;
   std::optional<float> dir_influence_scale;
@@ -93,6 +97,8 @@ EMSCRIPTEN_BINDINGS(my_class_example) {
     .function("set_direction_influence_render_mix", &GUIData::set_direction_influence_render_mix)
     .function("check_set_debug_gui_enabled", &GUIData::check_set_debug_gui_enabled)
     .function("do_set_debug_gui_enabled", &GUIData::do_set_debug_gui_enabled)
+    .function("check_direction_influence_image_path", &GUIData::check_direction_influence_image_path)
+    .function("set_direction_influence_image_path", &GUIData::set_direction_influence_image_path)
   ;
 }
 
@@ -102,6 +108,7 @@ struct WebGUIResult {
   std::string quality_preset;
   std::string style_preset;
   std::string text;
+  std::string direction_influence_image_path;
   std::optional<bool> set_dir_influence_image_enabled;
   std::optional<float> time_scale;
   std::optional<float> direction_influence_scale;
@@ -117,7 +124,7 @@ void web_gui_init() {
     gui.style.position = 'fixed';
     gui.style.left = '0';
     gui.style.top = '0';
-    gui.style.width = '512px';
+    gui.style.width = '368px';
     gui.style.backgroundColor = 'gray';
     gui.style.opacity = '0.5';
     gui.style.display = 'flex';
@@ -181,11 +188,31 @@ void web_gui_init() {
     });
 
     (function() {
+      let eg_index = 0;
+      const eg_texts = ([
+        "Warping, or warped; tugging bits of self by lines, anchors set down shallow.",
+        "Approaching the sea, the self curves",
+        "into a shell's ear, to sing something vague like a memory."
+      ]);
+      const eg_paths = ([
+        "images/337AA033.jpeg",
+        "images/336AA021.jpeg",
+        "images/336AA030.jpeg"
+      ]);
+
       const row = document.createElement('div');
       const text_entry = document.createElement('input');
       const submit = document.createElement('button');
       const disable = document.createElement('button');
       const clear = document.createElement('button');
+      const eg_toggle = document.createElement('button');
+      eg_toggle.innerText = 'toggle example';
+      eg_toggle.onclick = e => {
+        let ind = eg_index++;
+        ind = ind % eg_paths.length;
+        instance.set_text(eg_texts[ind]);
+        instance.set_direction_influence_image_path(eg_paths[ind]);
+      };
       clear.onclick = e => { text_entry.value = " "; instance.set_text(text_entry.value); };
       clear.innerText = 'clear';
       submit.innerText = 'submit';
@@ -196,6 +223,7 @@ void web_gui_init() {
       row.appendChild(submit);
       row.appendChild(disable);
       row.appendChild(clear);
+      row.appendChild(eg_toggle);
       div.appendChild(row);
     })();
 
@@ -263,6 +291,15 @@ WebGUIResult web_gui_update() {
       return stringToNewUTF8(preset);
     });
     res.text = str;
+    free(str);
+  }
+  {
+    char* str = (char*) EM_ASM_PTR({
+      const div = document.getElementById('gui');
+      const preset = div.instance.check_direction_influence_image_path();
+      return stringToNewUTF8(preset);
+    });
+    res.direction_influence_image_path = str;
     free(str);
   }
   {
@@ -385,6 +422,9 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
   }
   if (web_gui_res.set_debug_gui_enabled) {
     debug_gui_enabled = web_gui_res.set_debug_gui_enabled.value();
+  }
+  if (!web_gui_res.direction_influence_image_path.empty()) {
+    result.direction_influencing_image_path = web_gui_res.direction_influence_image_path;
   }
 #endif
 
