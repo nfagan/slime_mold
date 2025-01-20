@@ -42,4 +42,5 @@ struct GUIParams {
   float cursor_y;
 };
 
+void init_gui();
 GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& params);
