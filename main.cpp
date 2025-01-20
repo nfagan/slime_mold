@@ -9,7 +9,6 @@
 #ifdef SM_IS_EMSCRIPTEN
 #include <emscripten.h>
 #include <emscripten/html5.h>
-#include "web_gui.hpp"
 #endif
 
 #include <GLFW/glfw3.h>
@@ -96,8 +95,8 @@ int main(int, char**) {
 
   font::initialize_text_rasterizer();
 
+  init_gui();
 #ifdef SM_IS_EMSCRIPTEN
-  gui::web_gui_init();
   emscripten_set_main_loop_arg(main_loop, window, 0, false);
 #else
   while (!glfwWindowShouldClose((GLFWwindow*) window)) {
