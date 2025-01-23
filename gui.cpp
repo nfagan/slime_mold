@@ -66,12 +66,20 @@ public:
     return v;
   }
 
+  int check_render_bw() { auto v = render_bw; render_bw = -1; return v; }
+  void set_render_bw(bool v) { render_bw = int(v); }
+
+  int check_enabled() { auto v = enabled; enabled = -1; return v; }
+  void set_enabled(bool v) { enabled = int(v); }
+
 private:
   std::string quality_preset;
   std::string style_preset;
   std::string text;
   std::string dir_influence_image_path;
   int set_debug_gui_enabled{-1};
+  int render_bw{-1};
+  int enabled{-1};
   std::optional<bool> set_dir_influence_image_enabled;
   std::optional<float> dir_influence_scale;
   std::optional<float> time_scale;
@@ -99,6 +107,10 @@ EMSCRIPTEN_BINDINGS(my_class_example) {
     .function("do_set_debug_gui_enabled", &GUIData::do_set_debug_gui_enabled)
     .function("check_direction_influence_image_path", &GUIData::check_direction_influence_image_path)
     .function("set_direction_influence_image_path", &GUIData::set_direction_influence_image_path)
+    .function("set_render_bw", &GUIData::set_render_bw)
+    .function("check_render_bw", &GUIData::check_render_bw)
+    .function("set_enabled", &GUIData::set_enabled)
+    .function("check_enabled", &GUIData::check_enabled)
   ;
 }
 
@@ -114,157 +126,29 @@ struct WebGUIResult {
   std::optional<float> direction_influence_scale;
   std::optional<float> direction_influence_render_mix;
   std::optional<bool> set_debug_gui_enabled;
+  std::optional<bool> render_bw;
+  std::optional<bool> enabled;
 };
 
 void web_gui_init() {
-  EM_ASM(
-    const instance = new Module.GUIData();
-
-    const gui = document.createElement('div');
-    gui.style.position = 'fixed';
-    gui.style.left = '0';
-    gui.style.top = '0';
-    gui.style.width = '368px';
-    gui.style.backgroundColor = 'gray';
-    gui.style.opacity = '0.5';
-    gui.style.display = 'flex';
-    gui.style.flexDirection = 'column';
-
-    gui.instance = instance;
-    gui.id = 'gui';
-
-    const div = document.createElement('div');
-    div.style.display = 'flex';
-    div.style.flexDirection = 'column';
-    div.style.width = '100%';
-
-    let gui_enabled = true;
-    let debug_gui_enabled = false;
-
-    (function() {
-      function on_click(e) {
-        if (gui_enabled) {
-          div.style.display = 'none';
-        } else {
-          div.style.display = 'flex';
-        }
-        gui_enabled = !gui_enabled;
-      }
-
-      const show_hide = document.createElement('div');
-      show_hide.style.width = '100%';
-      const button = document.createElement('button');
-      button.innerText = "show or hide";
-      button.onclick = on_click;
-      const debug_button = document.createElement('button');
-      debug_button.innerText = "enable debug gui";
-      debug_button.onclick = e => {
-        debug_gui_enabled = !debug_gui_enabled;
-        instance.do_set_debug_gui_enabled(debug_gui_enabled);
-      };
-      show_hide.appendChild(button);
-      show_hide.appendChild(debug_button);
-      gui.appendChild(show_hide);
-    })();
-
-    const qual_row = document.createElement('div');
-    qual_row.style.width = '100%';
-    div.appendChild(qual_row);
-    (["low", "med", "high"]).map(p => {
-      const button1 = document.createElement('button');
-      button1.innerText = p;
-      button1.onclick = e => instance.set_quality_preset(p);
-      qual_row.appendChild(button1);
-    });
-
-    const style_row = document.createElement('div');
-    style_row.style.width = '100%';
-    div.appendChild(style_row);
-    (["mid_coh", "high_coh", "chaotic", "fragile", "clustered"]).map(p => {
-      const button1 = document.createElement('button');
-      button1.innerText = p;
-      button1.onclick = e => instance.set_style_preset(p);
-      style_row.appendChild(button1);
-    });
-
-    (function() {
-      let eg_index = 0;
-      const eg_texts = ([
-        "Warping, or warped; tugging bits of self by lines, anchors set down shallow.",
-        "Approaching the sea, the self curves",
-        "into a shell's ear, to sing something vague like a memory."
-      ]);
-      const eg_paths = ([
-        "images/337AA033.jpeg",
-        "images/336AA021.jpeg",
-        "images/336AA030.jpeg"
-      ]);
-
-      const row = document.createElement('div');
-      const text_entry = document.createElement('input');
-      const submit = document.createElement('button');
-      const disable = document.createElement('button');
-      const clear = document.createElement('button');
-      const eg_toggle = document.createElement('button');
-      eg_toggle.innerText = 'toggle example';
-      eg_toggle.onclick = e => {
-        let ind = eg_index++;
-        ind = ind % eg_paths.length;
-        instance.set_text(eg_texts[ind]);
-        instance.set_direction_influence_image_path(eg_paths[ind]);
-      };
-      clear.onclick = e => { text_entry.value = " "; instance.set_text(text_entry.value); };
-      clear.innerText = 'clear';
-      submit.innerText = 'submit';
-      submit.onclick = e => instance.set_text(text_entry.value);
-      disable.innerText = 'disable';
-      disable.onclick = e => instance.disable_direction_influence_image();
-      row.appendChild(text_entry);
-      row.appendChild(submit);
-      row.appendChild(disable);
-      row.appendChild(clear);
-      row.appendChild(eg_toggle);
-      div.appendChild(row);
-    })();
-
-    (function() {
-      const funcs = ([
-        {f: f => instance.set_time_scale(f), l: 'time'},
-        {f: f => instance.set_direction_influence_scale(f), l: 'dir_influence'},
-        {f: f => instance.set_direction_influence_render_mix(f), l: 'render_mix'}
-      ]);
-
-      funcs.map(func => {
-        const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.width = '100%';
-        const input = document.createElement('input');
-        const label = document.createElement('div');
-        label.style.width = '20%';
-        label.innerText = func.l;
-        input.type = 'range';
-        input.min = '0';
-        input.max = '100';
-        input.value = '50';
-        input.style.width = '80%';
-        input.style.height = '32px';
-        input.oninput = function() {
-          const v = parseInt(input.value) / 100;
-          func.f(v);
-        };
-        row.appendChild(label);
-        row.appendChild(input);
-        div.appendChild(row);
-      });
-    })();
-
-    gui.appendChild(div);
-    document.body.appendChild(gui);
-  );
+  EM_ASM({
+    const script = document.createElement('script');
+    script.src = 'gui.js';
+    document.head.appendChild(script);
+  });
 }
 
 WebGUIResult web_gui_update() {
   WebGUIResult res{};
+
+  const int has_gui = EM_ASM_INT({
+    const div = document.getElementById('gui');
+    return div !== null;
+  });
+
+  if (!has_gui) {
+    return res;
+  }
 
   {
     char* str = (char*) EM_ASM_PTR({
@@ -336,6 +220,20 @@ WebGUIResult web_gui_update() {
       return div.instance.check_set_debug_gui_enabled();
     });
     if (v >= 0) { res.set_debug_gui_enabled = bool(v); }
+  }
+  {
+    int v = EM_ASM_INT({
+      const div = document.getElementById('gui');
+      return div.instance.check_render_bw();
+    });
+    if (v >= 0) { res.render_bw = bool(v); }
+  }
+  {
+    int v = EM_ASM_INT({
+      const div = document.getElementById('gui');
+      return div.instance.check_enabled();
+    });
+    if (v >= 0) { res.enabled = bool(v); }
   }
 
   return res;
@@ -425,6 +323,12 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
   }
   if (!web_gui_res.direction_influence_image_path.empty()) {
     result.direction_influencing_image_path = web_gui_res.direction_influence_image_path;
+  }
+  if (web_gui_res.render_bw) {
+    *params.use_bw = web_gui_res.render_bw.value();
+  }
+  if (web_gui_res.enabled) {
+    result.enabled = web_gui_res.enabled.value();
   }
 #endif
 
