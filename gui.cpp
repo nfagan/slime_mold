@@ -297,8 +297,8 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
 
   if (!web_gui_res.text.empty()) {
     result.overlay_text = web_gui_res.text;
-    result.direction_influencing_image_scale = 0.05f;
-    result.direction_influencing_image_path = "images/336AA021.jpeg";
+//    result.direction_influencing_image_scale = 0.05f;
+//    result.direction_influencing_image_path = "images/336AA021.jpeg";
     *params.dir_image_mix = 0.0f;
   }
   if (web_gui_res.set_dir_influence_image_enabled) {
