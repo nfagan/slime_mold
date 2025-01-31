@@ -144,17 +144,14 @@ div.appendChild(style_row);
   row.style.width = '100%';
   (function() {
     let render_bw = true;
-    const label = document.createElement('label');
-    label.innerText = 'B&W';
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.checked = true;
-    input.oninput = function() {
+    const button = document.createElement('button');
+    button.innerText = 'color';
+    button.onclick = function() {
       render_bw = !render_bw;
       instance.set_render_bw(render_bw);
+      button.innerText = render_bw ? 'color' : 'b&w';
     }
-    row.appendChild(label);
-    row.appendChild(input);
+    row.appendChild(button);
   })();
   (function() {
     let enabled = true;
