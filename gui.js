@@ -22,6 +22,21 @@ let gui_enabled = true;
 let debug_gui_enabled = false;
 
 (function() {
+  const show_hide = document.createElement('div');
+  show_hide.style.width = '100%';
+  const button = document.createElement('button');
+  button.innerText = "hide";
+  button.onclick = on_click;
+  const debug_button = document.createElement('button');
+  debug_button.innerText = "enable debug gui";
+  debug_button.onclick = e => {
+    debug_gui_enabled = !debug_gui_enabled;
+    instance.do_set_debug_gui_enabled(debug_gui_enabled);
+    debug_button.innerText = debug_gui_enabled ? "disable debug gui" : "enable debug gui";
+  };
+  show_hide.appendChild(button);
+  show_hide.appendChild(debug_button);
+  gui.appendChild(show_hide);
   function on_click(e) {
     if (gui_enabled) {
       div.style.display = 'none';
@@ -29,22 +44,8 @@ let debug_gui_enabled = false;
       div.style.display = 'flex';
     }
     gui_enabled = !gui_enabled;
+    button.innerText = gui_enabled ? "hide" : "show";
   }
-
-  const show_hide = document.createElement('div');
-  show_hide.style.width = '100%';
-  const button = document.createElement('button');
-  button.innerText = "show or hide";
-  button.onclick = on_click;
-  const debug_button = document.createElement('button');
-  debug_button.innerText = "enable debug gui";
-  debug_button.onclick = e => {
-    debug_gui_enabled = !debug_gui_enabled;
-    instance.do_set_debug_gui_enabled(debug_gui_enabled);
-  };
-  show_hide.appendChild(button);
-  show_hide.appendChild(debug_button);
-  gui.appendChild(show_hide);
 })();
 
 const qual_row = document.createElement('div');
@@ -60,7 +61,7 @@ div.appendChild(qual_row);
 const style_row = document.createElement('div');
 style_row.style.width = '100%';
 div.appendChild(style_row);
-(["mid_coh", "high_coh", "chaotic", "fragile", "clustered"]).map(p => {
+(["mid_coh", "high_coh", "chaotic", "fragile", "clustered", "slow"]).map(p => {
   const button1 = document.createElement('button');
   button1.innerText = p;
   button1.onclick = e => instance.set_style_preset(p);
