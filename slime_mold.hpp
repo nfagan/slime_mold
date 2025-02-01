@@ -49,7 +49,7 @@ struct SlimeMoldConfig {
   int perturb_event_type{0};
   int num_perturb_circles{10};
   bool circular_world{true};
-  bool allow_perturb_event{true};
+  bool allow_perturb_event{false};
   bool allow_signal_influence{true};
   bool average_image{false};
 

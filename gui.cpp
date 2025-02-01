@@ -278,6 +278,7 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
   bool chaotic{};
   bool fragile{};
   bool clustered{};
+  bool slow_preset{};
   const bool is_high_res = gen::SlimeMoldConfig::texture_dim > 512;
 
   const float min_time_scale = 0.01f;
@@ -294,6 +295,7 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
   chaotic = web_gui_res.style_preset == "chaotic";
   fragile = web_gui_res.style_preset == "fragile";
   clustered = web_gui_res.style_preset == "clustered";
+  slow_preset = web_gui_res.style_preset == "slow";
 
   if (!web_gui_res.text.empty()) {
     result.overlay_text = web_gui_res.text;
@@ -357,6 +359,7 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
       chaotic = chaotic | ImGui::SmallButton("Chaotic");
       fragile = fragile | ImGui::SmallButton("Fragile");
       clustered = clustered | ImGui::SmallButton("Clustered");
+      slow_preset = slow_preset | ImGui::SmallButton("Slow");
       ImGui::TreePop();
     }
 
@@ -581,6 +584,12 @@ GUIUpdateResult render_gui(SlimeMoldComponent& component, const GUIParams& param
     result.turn_speed_power = 4;
     result.speed_power = is_high_res ? 0 : 2;
     result.only_right_turns = true;
+  }
+
+  if (slow_preset) {
+    result.turn_speed_power = 3;
+    result.speed_power = -1;
+    result.only_right_turns = false;
   }
 
   return result;
