@@ -4,6 +4,7 @@
 #include <array>
 #include <optional>
 #include <cassert>
+#include <vector>
 
 template <typename T>
 struct TemporaryView {
